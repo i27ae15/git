@@ -11,6 +11,8 @@ namespace Vest {
 
     constexpr const char* INIT = "init";
     constexpr const char* CAT_FILE = "cat-file";
+    constexpr const char* HASH_OBJECT = "hash-object";
+
     constexpr const size_t DECOMPRESSED_SIZE = 1024 * 1024;
 
     class CommandManager {
@@ -23,9 +25,19 @@ namespace Vest {
 
         private:
 
-            uint8_t actionForInit(int argc, char *argv[]);
-            uint8_t actionForCatFile(int argc, char *argv[]);
-            std::unordered_map<std::string, std::function<uint8_t(int argc, char *argv[])>> actions;
+            uint8_t actionForInit(int argc, char* argv[]);
+            uint8_t actionForCatFile(int argc, char* argv[]);
+            uint8_t actionForHashObject(int argc, char* argv[]);
+
+            std::vector<unsigned char> prepareBlob(
+                std::vector<unsigned char>& fileContent
+            );
+
+            std::unordered_map<
+                std::string,
+                std::function<uint8_t(int argc, char* argv[])>
+            > actions;
+
 
     };
 }

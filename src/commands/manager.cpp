@@ -7,6 +7,7 @@
 
 #include <utils.h>
 #include <commands/manager.h>
+#include <commands/file.h>
 
 
 namespace Vest {
@@ -15,6 +16,7 @@ namespace Vest {
         actions {
             {INIT, [this](int argc, char *argv[]) { return actionForInit(argc, argv); }},
             {CAT_FILE, [this](int argc, char *argv[]) { return actionForCatFile(argc, argv); }},
+            {HASH_OBJECT, [this](int argc, char *argv[]) { return actionForHashObject(argc, argv); }},
         } {}
     CommandManager::~CommandManager() {}
 
@@ -40,7 +42,7 @@ namespace Vest {
         return r;
     }
 
-    uint8_t CommandManager::actionForInit(int argc, char *argv[]) {
+    uint8_t CommandManager::actionForInit(int argc, char* argv[]) {
 
         std::filesystem::create_directory(".git");
         std::filesystem::create_directory(".git/objects");
@@ -59,26 +61,14 @@ namespace Vest {
         return EXIT_SUCCESS;
     }
 
-    uint8_t CommandManager::actionForCatFile(int argc, char *argv[]) {
+    uint8_t CommandManager::actionForCatFile(int argc, char* argv[]) {
 
         std::string parameter = argv[2];
         std::string fileID = argv[3];
         std::ostringstream filePath {};
 
         filePath << ".git/objects/" << fileID[0] << fileID[1] << '/' + fileID.substr(2);
-        std::ifstream file(filePath.str(), std::ios::binary);
-
-        if (!file) {
-            PRINT_ERROR("FAILED TO OPEN FILE: " + filePath.str());
-            return EXIT_FAILURE;
-        }
-
-        std::vector<unsigned char> compressedData (
-            (std::istreambuf_iterator<char>(file)),
-            std::istreambuf_iterator<char>()
-        );
-
-        file.close();
+        std::vector<unsigned char> compressedData {readFile(filePath.str())};
 
         if (compressedData.empty()) {
             PRINT_ERROR("THE FILE IS EMPTY");
@@ -121,5 +111,42 @@ namespace Vest {
         inflateEnd(&stream);
         return EXIT_SUCCESS;
 
+    }
+
+    uint8_t CommandManager::actionForHashObject(int argc, char* argv[]) {
+
+        std::string var {argv[2]};
+        std::string filePath {argv[3]};
+        std::vector<unsigned char> fileContent = readFile(filePath);
+        fileContent = prepareBlob(fileContent);
+
+        std::vector<unsigned char> compressedContent = compressData(fileContent);
+        std::string sha1 = computeSHA1(fileContent);
+
+        std::ostringstream pathToSaveFile {};
+        pathToSaveFile << ".git/objects/" << sha1[0] << sha1[1];
+
+        std::filesystem::create_directory(pathToSaveFile.str());
+        pathToSaveFile << '/' << sha1.substr(2); // Create the directory
+
+        saveToFile(pathToSaveFile.str(), compressedContent);
+
+        std::cout << sha1;
+        return EXIT_SUCCESS;
+    }
+
+    std::vector<unsigned char> CommandManager::prepareBlob(std::vector<unsigned char>& fileContent) {
+        // Allocate a vector to hold the header and file content
+        std::vector<unsigned char> blobData;
+        std::string header = "blob " + std::to_string(fileContent.size()) + '\0';
+
+        blobData.reserve(header.size() + fileContent.size()); // Reserve space for efficiency
+        // Append the header
+        blobData.insert(blobData.end(), header.begin(), header.end());
+
+        // Append the file content
+        blobData.insert(blobData.end(), fileContent.begin(), fileContent.end());
+
+        return blobData;
     }
 }
