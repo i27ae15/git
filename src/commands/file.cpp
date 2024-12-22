@@ -1,4 +1,5 @@
 #include <string>
+#include <sstream>
 #include <fstream>
 #include <stdexcept>
 #include <iostream>
@@ -12,6 +13,14 @@
 #include <commands/file.h>
 
 namespace Vest {
+
+    bool DecompressedData::isEmpty() {
+        return data.empty();
+    }
+
+    bool isValidCharForString(unsigned char* c) {
+        return (std::isprint(*c) && !std::iscntrl(*c));
+    }
 
     std::vector<unsigned char> readFile(std::string&& filePath) {
         return readFile(filePath);
@@ -54,6 +63,32 @@ namespace Vest {
         return compressedData;
     }
 
+    DecompressedData decompressData(
+        const std::vector<unsigned char>& compressedData,
+        const size_t decompressedSize
+    ) {
+        std::vector<unsigned char> decompressedBuffer(decompressedSize);
+
+        z_stream stream {};
+        stream.next_in = const_cast<Bytef*>(compressedData.data());
+        stream.avail_in = compressedData.size();
+        stream.next_out = decompressedBuffer.data();
+        stream.avail_out = decompressedSize;
+
+        if (inflateInit(&stream) != Z_OK) {
+            PRINT_ERROR("FAILED TO INIT ZLIB FOR DECOMPRESSION");
+            return {};
+        }
+
+        int result = inflate(&stream, Z_FINISH);
+        if (result != Z_STREAM_END) {
+            PRINT_ERROR("DECOMPRESSION_FAILED");
+            return {};
+        }
+
+        return DecompressedData {decompressedBuffer, stream};
+    }
+
     std::string computeSHA1(const std::vector<unsigned char>& data) {
         unsigned char hash[SHA_DIGEST_LENGTH];
         SHA1(data.data(), data.size(), hash);
@@ -73,6 +108,13 @@ namespace Vest {
         if (!outFile) throw std::runtime_error("FAILED TO OPEN " + filePath);
         outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
 
+    }
+
+    std::string constructFilePath(std::string fileID, std::string root) {
+        std::ostringstream filePath {};
+        filePath << root << fileID[0] << fileID[1] << '/' + fileID.substr(2);
+
+        return filePath.str();
     }
 
 }
