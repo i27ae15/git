@@ -44,10 +44,10 @@ namespace VestFileUtils {
         return ss.str();
     }
 
-    std::string constructFilePath(std::string fileID, std::string root) {
-        std::ostringstream filePath {};
-        filePath << root << fileID[0] << fileID[1] << '/' + fileID.substr(2);
+    std::string constructfPath(std::string fileID, std::string root) {
+        std::ostringstream fPath {};
+        fPath << root << fileID[0] << fileID[1] << '/' + fileID.substr(2);
 
-        return filePath.str();
+        return fPath.str();
     }
 }

@@ -10,26 +10,73 @@
 
 #include <utils.h>
 #include <file/file.h>
+#include <file/types.h>
 
 namespace VestFile {
 
-    void saveToFile(const std::string& filePath, const std::vector<unsigned char>& content) {
-        std::ofstream outFile(filePath, std::ios::binary);
+    void printAsHex(const char* buffer, std::size_t length) {
+        for (std::size_t i = 0; i < length; ++i) {
+            std::cout << std::hex << std::setw(2) << std::setfill('0')
+                    << (static_cast<unsigned int>(buffer[i]) & 0xFF) << " ";
+        }
+        std::cout << std::endl;
+    }
 
-        if (!outFile) throw std::runtime_error("FAILED TO OPEN " + filePath);
+
+    void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
+        std::ofstream outFile(fPath, std::ios::binary);
+
+        if (!outFile) throw std::runtime_error("FAILED TO OPEN " + fPath);
         outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
-
     }
 
-    std::vector<unsigned char> readFile(std::string&& filePath) {
-        return readFile(filePath);
+    uint8_t getFileType(std::string&& fPath) {
+        return getFileType(fPath);
     }
 
-    std::vector<unsigned char> readFile(std::string& filePath) {
-        std::ifstream file(filePath, std::ios::binary);
+    uint8_t getFileType(std::string& fPath) {
+        // Open the file in binary mode
+        std::ifstream file(fPath, std::ios::binary);
+        if (!file) {
+            throw std::runtime_error("Failed to open file: " + fPath);
+        }
+
+        PRINT_HIGHLIGHT("F_PATH: " + fPath);
+
+        // Read a portion of the file for decompression (e.g., 30 bytes)
+        std::vector<unsigned char> compressedData(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>()
+        );
+
+        // Define expected decompressed size (adjust based on typical object size)
+        size_t decompressedSize = 100; // You may need to adjust this
+
+        // Decompress the data
+        VestTypes::DecompressedData decompressed = decompressData(compressedData, decompressedSize);
+        std::string decompressedHeader(decompressed.data.begin(), decompressed.data.end());
+
+        // Get the type (e.g., "tree", "blob")
+        std::string type = decompressedHeader.substr(0, decompressedHeader.find(' '));
+        PRINT_HIGHLIGHT("FILE_TYPE: " + type);
+
+        // Determine and return the file type
+        if (type == "tree") return VestTypes::TREE_FILE;
+        if (type == "blob") return VestTypes::BLOB_FILE;
+
+        throw std::runtime_error("Cannot determine the file type");
+    }
+
+
+    std::vector<unsigned char> readFile(std::string&& fPath) {
+        return readFile(fPath);
+    }
+
+    std::vector<unsigned char> readFile(std::string& fPath) {
+        std::ifstream file(fPath, std::ios::binary);
 
         if (!file) {
-            PRINT_ERROR("FAILED TO OPEN FILE: " + filePath);
+            PRINT_ERROR("FAILED TO OPEN FILE: " + fPath);
             throw std::runtime_error("");
         }
 

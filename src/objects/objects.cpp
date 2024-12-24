@@ -10,6 +10,12 @@
 
 namespace VestObjects {
 
+    std::ostringstream computefPath(std::string& objSha1) {
+        std::ostringstream path {};
+        path << ".git/objects/" << objSha1[0] << objSha1[1] << "/" << objSha1.substr(2);
+        return path;
+    }
+
     std::string writeObject(std::string& fContent) {
         // PRINT_HIGHLIGHT(std::to_string(fContent.size()));
         std::vector<unsigned char> compressedContent = VestFile::compressData(fContent);
@@ -26,19 +32,49 @@ namespace VestObjects {
         return sha1;
     }
 
-    std::string prepareBlob(std::vector<unsigned char>& fileContent) {
+    std::string writeObject(std::string&& fContent) {
+        return writeObject(fContent);
+    }
+
+    std::string prepareBlob(std::vector<unsigned char>& fContent) {
         // Allocate a vector to hold the header and file content
-        std::vector<unsigned char> blobData;
-        std::string header = "blob " + std::to_string(fileContent.size()) + '\0';
-        header.append(fileContent.begin(), fileContent.end());
+        std::string header = "blob " + std::to_string(fContent.size()) + '\0';
+        header.append(fContent.begin(), fContent.end());
         return header;
     }
 
-    std::string createBlob(std::string& filePath) {
-        std::vector<unsigned char> fContent = VestFile::readFile(filePath);
+    std::string createBlob(std::string& fPath) {
+        std::vector<unsigned char> fContent = VestFile::readFile(fPath);
         std::string blob = prepareBlob(fContent);
 
         std::string sha1 = writeObject(blob);
+        return sha1;
+    }
+
+    std::string prepareCommit(std::string& fContent) {
+        std::string header = "commit " + std::to_string(fContent.size()) + '\0';
+        header.append(fContent.begin(), fContent.end());
+        return header;
+    }
+
+    std::string createCommit(std::string& tSha1, std::string& parent, std::string commitMsg) {
+
+        std::ostringstream fContent {};
+        fContent << "tree " << tSha1 << "\x0A";
+
+        if (!parent.empty()) fContent << "parent " << parent + "\x0A";
+
+        fContent << "author root <root@Destiny.> 1735071151 +0100 \x0A";
+        fContent << "committer root <root@Destiny.> 1735071151 +0100 \x0A";
+        fContent << "\x0A";
+        fContent << commitMsg << "\x0A";
+
+        // Prepend the header (fContent type and size) to the fContent body
+        std::string fContentStr = fContent.str();
+        std::string commit = prepareCommit(fContentStr);
+
+        // PRINT_HIGHLIGHT(commit);
+        std::string sha1 = writeObject(commit);
         return sha1;
     }
 

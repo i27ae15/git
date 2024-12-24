@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <zlib.h>
+#include <cstring>
 
 #include <utils.h>
 
@@ -24,6 +25,7 @@ namespace Vest {
             {CAT_FILE, [this](int argc, char *argv[]) { return actionForCatFile(argc, argv); }},
             {WRITE_TREE, [this](int argc, char *argv[]) { return actionForWriteTree(argc, argv); }},
             {HASH_OBJECT, [this](int argc, char *argv[]) { return actionForHashObject(argc, argv); }},
+            {COMMIT_TREE, [this](int argc, char *argv[]) { return actionForCommitTree(argc, argv); }},
         } {}
     CommandManager::~CommandManager() {}
 
@@ -72,8 +74,8 @@ namespace Vest {
 
         std::string parameter = argv[2];
         std::string fileID = argv[3];
-        std::string filePath {VestFileUtils::constructFilePath(fileID)};
-        std::vector<unsigned char> compressedData {VestFile::readFile(filePath)};
+        std::string fPath {VestFileUtils::constructfPath(fileID)};
+        std::vector<unsigned char> compressedData {VestFile::readFile(fPath)};
 
         if (compressedData.empty()) {
             PRINT_ERROR("THE FILE IS EMPTY");
@@ -103,18 +105,18 @@ namespace Vest {
     uint8_t CommandManager::actionForHashObject(int argc, char* argv[]) {
 
         std::string var {argv[2]};
-        std::string filePath {argv[3]};
-        std::string sha1 = VestObjects::createBlob(filePath);
-
+        std::string fPath {argv[3]};
+        std::string sha1 = VestObjects::createBlob(fPath);
         std::cout << sha1;
+
         return EXIT_SUCCESS;
     }
 
     uint8_t CommandManager::actionForLsTree(int argc, char* argv[]) {
         std::string parameter = argv[2];
-        std::string fileID = argv[3];
-        std::string filePath {VestFileUtils::constructFilePath(fileID)};
-        std::vector<unsigned char> compressedData {VestFile::readFile(filePath)};
+        std::string fSha1 = argv[3];
+        std::string fPath {VestFileUtils::constructfPath(fSha1)};
+        std::vector<unsigned char> compressedData {VestFile::readFile(fPath)};
 
         VestTypes::DecompressedData data {VestFile::decompressData(compressedData)};
 
@@ -159,6 +161,24 @@ namespace Vest {
         std::filesystem::path rootPath {std::filesystem::current_path()};
 
         std::string sha1 = VestObjects::createTree(rootPath);
+        std::cout << sha1;
+
+        return EXIT_SUCCESS;
+    }
+
+    uint8_t CommandManager::actionForCommitTree(int argc, char* argv[]) {
+
+        std::string tSha1 = argv[2];
+        std::string parent {};
+        std::string commitMsg {};
+
+        // check if we have a parent
+        for (uint8_t i {}; i < argc; i++) {
+            if (std::string(argv[i]) == "-p") {parent = argv[i + 1]; i++; continue;}
+            if (std::string(argv[i]) == "-m") {commitMsg = argv[i + 1]; i++; continue;}
+        }
+
+        std::string sha1 = VestObjects::createCommit(tSha1, parent, commitMsg);
         std::cout << sha1;
 
         return EXIT_SUCCESS;

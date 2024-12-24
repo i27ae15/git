@@ -10,10 +10,13 @@
 
 namespace VestFile {
 
-    void saveToFile(const std::string& filePath, const std::vector<unsigned char>& content);
+    void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content);
 
-    std::vector<unsigned char> readFile(std::string& filePath);
-    std::vector<unsigned char> readFile(std::string&& filePath);
+    uint8_t getFileType(std::string& fPath);
+    uint8_t getFileType(std::string&& fPath);
+
+    std::vector<unsigned char> readFile(std::string& fPath);
+    std::vector<unsigned char> readFile(std::string&& fPath);
     std::vector<unsigned char> compressData(std::string& inputData);
     std::vector<unsigned char> compressData(const std::vector<unsigned char>& inputData);
 
