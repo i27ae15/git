@@ -13,6 +13,7 @@ namespace Vest {
     constexpr const char* CAT_FILE = "cat-file";
     constexpr const char* HASH_OBJECT = "hash-object";
     constexpr const char* LS_TREE = "ls-tree";
+    constexpr const char* WRITE_TREE = "write-tree";
 
     class CommandManager {
 
@@ -28,6 +29,7 @@ namespace Vest {
             uint8_t actionForCatFile(int argc, char* argv[]);
             uint8_t actionForHashObject(int argc, char* argv[]);
             uint8_t actionForLsTree(int argc, char* argv[]);
+            uint8_t actionForWriteTree(int argc, char* argv[]);
 
             std::vector<unsigned char> prepareBlob(
                 std::vector<unsigned char>& fileContent

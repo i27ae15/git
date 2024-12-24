@@ -6,18 +6,24 @@
 #include <zlib.h>
 
 #include <utils.h>
-#include <commands/manager.h>
-#include <commands/file.h>
 
+#include <file/file.h>
+#include <file/types.h>
+#include <file/utils.h>
+
+#include <objects/objects.h>
+
+#include <commands/manager.h>
 
 namespace Vest {
 
     CommandManager::CommandManager() :
         actions {
             {INIT, [this](int argc, char *argv[]) { return actionForInit(argc, argv); }},
-            {CAT_FILE, [this](int argc, char *argv[]) { return actionForCatFile(argc, argv); }},
-            {HASH_OBJECT, [this](int argc, char *argv[]) { return actionForHashObject(argc, argv); }},
             {LS_TREE, [this](int argc, char *argv[]) { return actionForLsTree(argc, argv); }},
+            {CAT_FILE, [this](int argc, char *argv[]) { return actionForCatFile(argc, argv); }},
+            {WRITE_TREE, [this](int argc, char *argv[]) { return actionForWriteTree(argc, argv); }},
+            {HASH_OBJECT, [this](int argc, char *argv[]) { return actionForHashObject(argc, argv); }},
         } {}
     CommandManager::~CommandManager() {}
 
@@ -66,8 +72,8 @@ namespace Vest {
 
         std::string parameter = argv[2];
         std::string fileID = argv[3];
-        std::string filePath {constructFilePath(fileID)};
-        std::vector<unsigned char> compressedData {readFile(filePath)};
+        std::string filePath {VestFileUtils::constructFilePath(fileID)};
+        std::vector<unsigned char> compressedData {VestFile::readFile(filePath)};
 
         if (compressedData.empty()) {
             PRINT_ERROR("THE FILE IS EMPTY");
@@ -76,7 +82,7 @@ namespace Vest {
 
         // PRINT_WARNING("TO READ: " + std::to_string(compressedData.size()) + " BYTES FROM FILE");
 
-        DecompressedData data {decompressData(compressedData)}; if (data.isEmpty()) return EXIT_FAILURE;
+        VestTypes::DecompressedData data {VestFile::decompressData(compressedData)}; if (data.isEmpty()) return EXIT_FAILURE;
         unsigned char* bufferData = data.data.data() + 5;  // Start 5 bytes into the buffer this to avoid blob
 
         // Find the null character '\x00'
@@ -98,19 +104,7 @@ namespace Vest {
 
         std::string var {argv[2]};
         std::string filePath {argv[3]};
-        std::vector<unsigned char> fileContent = readFile(filePath);
-        fileContent = prepareBlob(fileContent);
-
-        std::vector<unsigned char> compressedContent = compressData(fileContent);
-        std::string sha1 = computeSHA1(fileContent);
-
-        std::ostringstream pathToSaveFile {};
-        pathToSaveFile << ".git/objects/" << sha1[0] << sha1[1];
-
-        std::filesystem::create_directory(pathToSaveFile.str());
-        pathToSaveFile << '/' << sha1.substr(2); // Create the directory
-
-        saveToFile(pathToSaveFile.str(), compressedContent);
+        std::string sha1 = VestObjects::createBlob(filePath);
 
         std::cout << sha1;
         return EXIT_SUCCESS;
@@ -119,10 +113,10 @@ namespace Vest {
     uint8_t CommandManager::actionForLsTree(int argc, char* argv[]) {
         std::string parameter = argv[2];
         std::string fileID = argv[3];
-        std::string filePath {constructFilePath(fileID)};
-        std::vector<unsigned char> compressedData {readFile(filePath)};
+        std::string filePath {VestFileUtils::constructFilePath(fileID)};
+        std::vector<unsigned char> compressedData {VestFile::readFile(filePath)};
 
-        DecompressedData data {decompressData(compressedData)};
+        VestTypes::DecompressedData data {VestFile::decompressData(compressedData)};
 
         unsigned char* bufferData = data.data.data();
         unsigned char* completeString {bufferData}; // This modifies the original data but is more efficient
@@ -140,8 +134,8 @@ namespace Vest {
             }
             else if (c == '\x00' && isListening) {
                 *completeString++ = '\n';
-                bufferData += SHA_SIZE;
-                totalOut -= SHA_SIZE;
+                bufferData += VestTypes::SHA_BYTES_SIZE;
+                totalOut -= VestTypes::SHA_BYTES_SIZE;
             }
 
             bufferData++;
@@ -160,18 +154,15 @@ namespace Vest {
 
     }
 
-    std::vector<unsigned char> CommandManager::prepareBlob(std::vector<unsigned char>& fileContent) {
-        // Allocate a vector to hold the header and file content
-        std::vector<unsigned char> blobData;
-        std::string header = "blob " + std::to_string(fileContent.size()) + '\0';
+    uint8_t CommandManager::actionForWriteTree(int argc, char* argv[]) {
 
-        blobData.reserve(header.size() + fileContent.size()); // Reserve space for efficiency
-        // Append the header
-        blobData.insert(blobData.end(), header.begin(), header.end());
+        std::filesystem::path rootPath {std::filesystem::current_path()};
 
-        // Append the file content
-        blobData.insert(blobData.end(), fileContent.begin(), fileContent.end());
+        std::string sha1 = VestObjects::createTree(rootPath);
+        std::cout << sha1;
 
-        return blobData;
+        return EXIT_SUCCESS;
     }
+
+
 }

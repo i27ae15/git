@@ -6,20 +6,19 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
-#include <openssl/sha.h>
 #include <zlib.h>
 
 #include <utils.h>
-#include <commands/file.h>
+#include <file/file.h>
 
-namespace Vest {
+namespace VestFile {
 
-    bool DecompressedData::isEmpty() {
-        return data.empty();
-    }
+    void saveToFile(const std::string& filePath, const std::vector<unsigned char>& content) {
+        std::ofstream outFile(filePath, std::ios::binary);
 
-    bool isValidCharForString(unsigned char* c) {
-        return (std::isprint(*c) && !std::iscntrl(*c));
+        if (!outFile) throw std::runtime_error("FAILED TO OPEN " + filePath);
+        outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
+
     }
 
     std::vector<unsigned char> readFile(std::string&& filePath) {
@@ -44,6 +43,11 @@ namespace Vest {
         return fileContent;
     }
 
+    std::vector<unsigned char> compressData(std::string& inputData) {
+        std::vector<unsigned char> data(inputData.begin(), inputData.end());
+        return compressData(data);
+    }
+
     std::vector<unsigned char> compressData(
         const std::vector<unsigned char>& inputData
     ) {
@@ -63,7 +67,7 @@ namespace Vest {
         return compressedData;
     }
 
-    DecompressedData decompressData(
+    VestTypes::DecompressedData decompressData(
         const std::vector<unsigned char>& compressedData,
         const size_t decompressedSize
     ) {
@@ -86,35 +90,7 @@ namespace Vest {
             return {};
         }
 
-        return DecompressedData {decompressedBuffer, stream};
-    }
-
-    std::string computeSHA1(const std::vector<unsigned char>& data) {
-        unsigned char hash[SHA_DIGEST_LENGTH];
-        SHA1(data.data(), data.size(), hash);
-
-        // Convert to hexadecimal string
-        std::stringstream ss;
-        for (uint8_t i {}; i < SHA_DIGEST_LENGTH; i++) {
-            ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
-        }
-
-        return ss.str();
-    }
-
-    void saveToFile(const std::string& filePath, const std::vector<unsigned char>& content) {
-        std::ofstream outFile(filePath, std::ios::binary);
-
-        if (!outFile) throw std::runtime_error("FAILED TO OPEN " + filePath);
-        outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
-
-    }
-
-    std::string constructFilePath(std::string fileID, std::string root) {
-        std::ostringstream filePath {};
-        filePath << root << fileID[0] << fileID[1] << '/' + fileID.substr(2);
-
-        return filePath.str();
+        return VestTypes::DecompressedData {decompressedBuffer, stream};
     }
 
 }
