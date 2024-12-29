@@ -103,20 +103,23 @@ namespace VestPack {
 
         for (uint32_t i {}; i < nObjects; i++) {
             ObjectHeader objHeader = parseObjectHeader(rData, _offset);
+
+            if (objHeader.type == VestTypes::REF_DELTA) {
+                PRINT_WARNING("REF_DELTA");
+                objHeader.start += VestTypes::SHA_BYTES_SIZE;
+                _offset += VestTypes::SHA_BYTES_SIZE;
+            }
+
             std::vector<uint8_t> nextObject(rData.begin() + objHeader.start, rData.end());
-
-            // if (objHeader.type == VestTypes::OFS_DELTA || objHeader.type == VestTypes::REF_DELTA) {
-            //     _offset += objHeader.size;
-            //     continue;
-            // }
-
             VestTypes::DecompressedData dData = VestFile::decompressData(
                 nextObject, VestTypes::EXPAND_AS_NEEDED
             );
 
             for (char c : dData.data) std::cout << c;
+            std::cout << "\x0A";
+            PRINT_BIG_SEPARATION;
 
-            PRINT_SUCCESS("USED: " + std::to_string(dData.compressedUsed));
+            // PRINT_SUCCESS("USED: " + std::to_string(dData.compressedUsed));
             _offset += dData.compressedUsed;
 
             if (i == 10) break;

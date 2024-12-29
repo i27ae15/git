@@ -1,15 +1,13 @@
-#ifndef VEST_OBJECTS_H
-#define VEST_OBJECTS_H
+#ifndef VEST_OBJECTS_INITIALIZERS_H
+#define VEST_OBJECTS_INITIALIZERS_H
 
 #include <string>
 #include <file/types.h>
 
 namespace VestObjects {
 
-    std::string writeObject(std::string&& fContent);
-    std::string writeObject(std::string& fContent);
+    uint8_t initializeVest();
 
-    std::string prepareCommit(std::string& fContent);
     std::string createCommit(
         std::string& tSha1,
         std::string& parent,
@@ -17,10 +15,7 @@ namespace VestObjects {
     );
 
     std::string createTree(std::filesystem::path& root);
-
-    std::string prepareBlob(std::vector<unsigned char>& fileContent);
     std::string createBlob(std::string& fPath);
-
 }
 
-#endif // VEST_OBJECTS_H
+#endif // VEST_OBJECTS_INITIALIZERS_H

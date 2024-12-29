@@ -15,7 +15,7 @@
 
 #include <request/utils.h>
 
-#include <objects/objects.h>
+#include <objects/initializers.h>
 
 #include <commands/manager.h>
 
@@ -56,22 +56,7 @@ namespace Vest {
     }
 
     uint8_t CommandManager::actionForInit(int argc, char* argv[]) {
-
-        std::filesystem::create_directory(".git");
-        std::filesystem::create_directory(".git/objects");
-        std::filesystem::create_directory(".git/refs");
-
-        std::ofstream headFile(".git/HEAD");
-        if (headFile.is_open()) {
-            headFile << "ref: refs/heads/main\n";
-            headFile.close();
-        } else {
-            PRINT_ERROR("FAILED TO CREATE .git/HEAD file.");
-            return EXIT_FAILURE;
-        }
-
-        PRINT_SUCCESS("INITIALIZED GIT DIRECTORY");
-        return EXIT_SUCCESS;
+        return VestObjects::initializeVest();
     }
 
     uint8_t CommandManager::actionForCatFile(int argc, char* argv[]) {
