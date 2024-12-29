@@ -11,6 +11,9 @@
 #include <file/file.h>
 #include <file/types.h>
 #include <file/utils.h>
+#include <file/pack.h>
+
+#include <request/utils.h>
 
 #include <objects/objects.h>
 
@@ -21,6 +24,7 @@ namespace Vest {
     CommandManager::CommandManager() :
         actions {
             {INIT, [this](int argc, char *argv[]) { return actionForInit(argc, argv); }},
+            {CLONE, [this](int argc, char *argv[]) { return actionForClone(argc, argv); }},
             {LS_TREE, [this](int argc, char *argv[]) { return actionForLsTree(argc, argv); }},
             {CAT_FILE, [this](int argc, char *argv[]) { return actionForCatFile(argc, argv); }},
             {WRITE_TREE, [this](int argc, char *argv[]) { return actionForWriteTree(argc, argv); }},
@@ -75,7 +79,7 @@ namespace Vest {
         std::string parameter = argv[2];
         std::string fileID = argv[3];
         std::string fPath {VestFileUtils::constructfPath(fileID)};
-        std::vector<unsigned char> compressedData {VestFile::readFile(fPath)};
+        std::vector<uint8_t> compressedData {VestFile::readFile(fPath)};
 
         if (compressedData.empty()) {
             PRINT_ERROR("THE FILE IS EMPTY");
@@ -116,7 +120,7 @@ namespace Vest {
         std::string parameter = argv[2];
         std::string fSha1 = argv[3];
         std::string fPath {VestFileUtils::constructfPath(fSha1)};
-        std::vector<unsigned char> compressedData {VestFile::readFile(fPath)};
+        std::vector<uint8_t> compressedData {VestFile::readFile(fPath)};
 
         VestTypes::DecompressedData data {VestFile::decompressData(compressedData)};
 
@@ -184,5 +188,44 @@ namespace Vest {
         return EXIT_SUCCESS;
     }
 
+    uint8_t CommandManager::actionForClone(int argc, char* argv[]) {
 
+        std::string bUrl = argv[2];
+
+        // PRINT_SUCCESS("------------- DATA RETRIEVED -------------");
+        // PRINT_HIGHLIGHT(rData);
+
+        std::string sha1Head {};
+        VestRequest::getSha1Head(
+            std::string(bUrl + "/info/refs?service=git-upload-pack").c_str(),
+            sha1Head
+        );
+
+        std::vector<uint8_t> rData {};
+        std::vector<std::string> wSha1 {sha1Head};
+        uint8_t r = VestRequest::requestFilesToGit(
+            std::string(bUrl + ".git/git-upload-pack").c_str(),
+            rData,
+            wSha1
+        );
+
+        // PRINT_HIGHLIGHT("RAW: " + rData);
+
+        // for (uint8_t i {}; i < 12; i++) PRINT_HIGHLIGHT(rData[i]);
+        VestPack::processPack(rData, 12);
+        // std::string dData = VestFile::decompressData(rData);
+        // PRINT_HIGHLIGHT("READING THE FILE");
+
+        // VestPackParser::parsePackfile("./packfile.pack");
+
+
+        // PRINT_HIGHLIGHT("RAW: " + rData);
+        return EXIT_SUCCESS;
+
+
+        PRINT_HIGHLIGHT("CALL RESULT: " + std::to_string(r));
+        PRINT_HIGHLIGHT("CALL TO: " + std::string(bUrl + ".git/git-upload-pack"));
+
+        return EXIT_SUCCESS;
+    }
 }

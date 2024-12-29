@@ -11,6 +11,8 @@
 #include <utils.h>
 #include <file/file.h>
 #include <file/types.h>
+#include <file/pack.h>
+
 
 namespace VestFile {
 
@@ -21,7 +23,6 @@ namespace VestFile {
         }
         std::cout << std::endl;
     }
-
 
     void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
         std::ofstream outFile(fPath, std::ios::binary);
@@ -44,7 +45,7 @@ namespace VestFile {
         PRINT_HIGHLIGHT("F_PATH: " + fPath);
 
         // Read a portion of the file for decompression (e.g., 30 bytes)
-        std::vector<unsigned char> compressedData(
+        std::vector<uint8_t> compressedData(
             (std::istreambuf_iterator<char>(file)),
             std::istreambuf_iterator<char>()
         );
@@ -61,12 +62,11 @@ namespace VestFile {
         PRINT_HIGHLIGHT("FILE_TYPE: " + type);
 
         // Determine and return the file type
-        if (type == "tree") return VestTypes::TREE_FILE;
-        if (type == "blob") return VestTypes::BLOB_FILE;
+        if (type == "tree") return VestTypes::TREE;
+        if (type == "blob") return VestTypes::BLOB;
 
         throw std::runtime_error("Cannot determine the file type");
     }
-
 
     std::vector<unsigned char> readFile(std::string&& fPath) {
         return readFile(fPath);
@@ -115,29 +115,61 @@ namespace VestFile {
     }
 
     VestTypes::DecompressedData decompressData(
-        const std::vector<unsigned char>& compressedData,
-        const size_t decompressedSize
+        std::vector<uint8_t>& compressedData,
+        size_t size
     ) {
-        std::vector<unsigned char> decompressedBuffer(decompressedSize);
+
+        bool performResize {};
+        if (size == VestTypes::EXPAND_AS_NEEDED) {
+            size = VestTypes::KB;
+            performResize = true;
+        }
+
+        std::vector<uint8_t> uncompressed(size); // KB
 
         z_stream stream {};
-        stream.next_in = const_cast<Bytef*>(compressedData.data());
-        stream.avail_in = compressedData.size();
-        stream.next_out = decompressedBuffer.data();
-        stream.avail_out = decompressedSize;
+        inflateInit(&stream);
 
-        if (inflateInit(&stream) != Z_OK) {
-            PRINT_ERROR("FAILED TO INIT ZLIB FOR DECOMPRESSION");
-            return {};
+        stream.next_in = &compressedData[0];
+        stream.avail_in = compressedData.size();  // all remaining bytes in the pack
+        stream.next_out = uncompressed.data();
+        stream.avail_out = uncompressed.size();
+
+        size_t uSize {size};
+        bool resize {};
+
+        // Keep decompressing until we have exactly 'objHeader.size' bytes output
+        while (true) {
+            int status = inflate(&stream, Z_NO_FLUSH);
+
+            if (status == Z_STREAM_END) break;
+
+            if (status != Z_OK) {
+                if (performResize && stream.avail_out == 0) {
+                    resize = true;
+                    uncompressed.resize(uSize * 2);
+                    stream.next_out = uncompressed.data() + uSize;
+                    stream.avail_out = uSize;
+
+                    uSize *= 2;
+                    PRINT_WARNING("ADDED MORE SPACE: " + std::to_string(uSize));
+                }
+                else {
+                    inflateEnd(&stream);
+                    PRINT_HIGHLIGHT("STATUS: " + std::to_string(status));
+                    throw std::runtime_error("Zlib inflate error");
+                }
+            }
         }
 
-        int result = inflate(&stream, Z_FINISH);
-        if (result != Z_STREAM_END) {
-            PRINT_ERROR("DECOMPRESSION_FAILED");
-            return {};
-        }
+        if (resize) uncompressed.resize(stream.total_out);
+        inflateEnd(&stream);
 
-        return VestTypes::DecompressedData {decompressedBuffer, stream};
+        size_t compressedUsed = compressedData.size() - stream.avail_in;
+        return VestTypes::DecompressedData {uncompressed, stream, compressedUsed};
     }
 
+    VestTypes::DecompressedData decompressData(std::vector<uint8_t>& compressedData) {
+        return decompressData(compressedData, VestTypes::KB);
+    }
 }
