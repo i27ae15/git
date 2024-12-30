@@ -24,10 +24,6 @@ namespace VestPack {
 
     uint32_t parsePackHeader(const std::vector<uint8_t>& rData, size_t& offset);
 
-    void byteToHex(uint8_t byte);
-    void byteToBinary(uint8_t byte);
-    void printHexAndBinary(uint8_t byte);
-
     void createFiles(uint8_t& fType, std::string& fContent, std::string& dir);
 
     void processPack(std::vector<uint8_t>& rData, size_t offset, std::string& dir);

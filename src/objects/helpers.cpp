@@ -35,7 +35,7 @@ namespace VestObjects {
 
     std::string prepareBlob(std::vector<unsigned char>& fContent) {
         // Allocate a vector to hold the header and file content
-        std::string header = "blob " + std::to_string(fContent.size()) + '\x0A';
+        std::string header = "blob " + std::to_string(fContent.size()) + '\x00';
         header.append(fContent.begin(), fContent.end());
         return header;
     }

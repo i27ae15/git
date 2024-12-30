@@ -29,6 +29,9 @@ namespace VestFile {
     VestTypes::DecompressedData decompressData(
         std::vector<uint8_t>& compressedData
     );
+
+    VestTypes::CommitFile* readCommit(std::string& fContent);
+    VestTypes::TreeFile readTreeFile(std::string& fContent);
 }
 
 #endif // VEST_FILE_H

@@ -12,9 +12,11 @@
 
 #include <file/pack.h>
 #include <file/file.h>
+#include <file/types.h>
 
 #include <objects/initializers.h>
 #include <objects/helpers.h>
+#include <objects/structs.h>
 
 #include <utils.h>
 
@@ -69,68 +71,54 @@ namespace VestPack {
         return nObjects;
     }
 
-    void byteToHex(uint8_t byte) {
-        std::ostringstream oss;
-        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
-        std::cout << "\\x" << oss.str();
-    }
-
-    void byteToBinary(uint8_t byte) {
-        std::string binary;
-        for (int i = 7; i >= 0; --i) { // Loop through each bit
-            binary += (byte & (1 << i)) ? '1' : '0';
-        }
-        std::cout << binary;
-    }
-
-    void printHexAndBinary(uint8_t byte) {
-        byteToHex(byte);
-        std::cout << " | ";
-        byteToBinary(byte);
-        std::cout << "\x0A";
+    void writeCommit(
+        VestObjects::CommitLinkedList* commitList,
+        std::string& fContent,
+        std::string& dir
+    ) {
+        VestTypes::CommitFile* commitFile = VestFile::readCommit(fContent);
+        commitList->addNode(commitFile);
+        PRINT_WARNING("SHA1 WRITTEN: " + VestObjects::createCommit(fContent, dir));
     }
 
     void createFiles(uint8_t& fType, std::string& fContent, std::string& dir) {
 
         std::string sha1 {};
-        std::string treeFile {};
-        std::uint16_t cTreeSize {};
+        std::string fileToWrite {};
+
+        VestTypes::TreeFile tFile {};
 
         switch (fType) {
-            case VestTypes::COMMIT:
-                std::cout << fContent;
-                std::cout << "\x0A";
-                sha1 = VestObjects::createCommit(fContent, dir);
-                PRINT_WARNING("SHA1 WRITTEN: " + sha1);
-                break;
-
             case VestTypes::TREE:
 
-                for (uint8_t c : fContent) {
-                    cTreeSize++;
-                    byteToHex(c);
+                tFile = VestFile::readTreeFile(fContent);
+
+                PRINT_HIGHLIGHT("TREE FILE");
+                for (VestTypes::TreeFileLine* t : tFile.tLines) {
+                    PRINT_HIGHLIGHT("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
                 }
+                PRINT_SML_SEPARATION;
 
-                std::cout << "\x0A";
+                fileToWrite = "tree " + std::to_string(fContent.size()) + '\x00';
+                fileToWrite += fContent;
 
-                treeFile = "tree " + std::to_string(fContent.size()) + '\x00';
-                treeFile += fContent;
-
-                PRINT_HIGHLIGHT(
-                    "MANUAL SIZE: " + std::to_string(cTreeSize) +
-                    " | F_CONTENT.SIZE: " + std::to_string(fContent.size())
-                );
-
-                // std::cout << treeFile;
-                sha1 = VestObjects::writeObject(treeFile, dir);
+                sha1 = VestObjects::writeObject(fileToWrite, dir);
                 PRINT_COLOR(BLUE, "SHA1 WRITTEN: " + sha1);
+                break;
+
+            case VestTypes::BLOB:
+                fileToWrite = "blob " + std::to_string(fContent.size()) + '\x00';
+                fileToWrite += fContent;
+
+                sha1 = VestObjects::writeObject(fileToWrite, dir);
+                PRINT_COLOR(GREEN, "SHA1 WRITTEN: " + sha1);
                 break;
 
             default:
                 break;
         }
 
-        if (fType == VestTypes::TREE || fType == VestTypes::COMMIT) {
+        if (fType == VestTypes::TREE || fType == VestTypes::BLOB) {
             PRINT_BIG_SEPARATION;
         }
     }
@@ -140,11 +128,14 @@ namespace VestPack {
         size_t _offset = offset;
         uint32_t nObjects = parsePackHeader(rData, _offset);
 
+        VestObjects::CommitLinkedList* commitList = new VestObjects::CommitLinkedList();
+        bool p {true};
+
         for (uint32_t i {}; i < nObjects; i++) {
             ObjectHeader objHeader = parseObjectHeader(rData, _offset);
 
             if (objHeader.type == VestTypes::REF_DELTA) {
-                PRINT_WARNING("REF_DELTA");
+                // PRINT_WARNING("REF_DELTA");
                 objHeader.start += VestTypes::SHA_BYTES_SIZE;
                 _offset += VestTypes::SHA_BYTES_SIZE;
             }
@@ -155,11 +146,22 @@ namespace VestPack {
             );
 
             std::string fContent = std::string(dData.data.begin(), dData.data.end());
-            createFiles(objHeader.type, fContent, dir);
+
+            switch (objHeader.type) {
+                case VestTypes::COMMIT:
+                    writeCommit(commitList, fContent, dir);
+                    break;
+                default:
+                    if (p) { PRINT_HIGHLIGHT("PRINTING COMMITS"); commitList->printCommits(); }
+                    p = false;
+                    createFiles(objHeader.type, fContent, dir);
+                    break;
+            }
+
 
             _offset += dData.compressedUsed;
 
-            // if (i == 10) break;
+            if (i == 10) break;
         }
 
     }

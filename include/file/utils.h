@@ -5,6 +5,11 @@
 #include <file/types.h>
 
 namespace VestFileUtils {
+
+    std::string byteToHex(uint8_t byte);
+    std::string byteToBinary(uint8_t byte);
+    void printHexAndBinary(uint8_t byte);
+
     std::string constructFileLine(
         VestTypes::FileType& fileType,
         std::string& sha1Hex,
