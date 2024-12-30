@@ -61,6 +61,8 @@ namespace Vest {
 
     uint8_t CommandManager::actionForCatFile(int argc, char* argv[]) {
 
+        PRINT_HIGHLIGHT("CAT FILE");
+
         std::string parameter = argv[2];
         std::string fileID = argv[3];
         std::string fPath {VestFileUtils::constructfPath(fileID)};
@@ -176,9 +178,10 @@ namespace Vest {
     uint8_t CommandManager::actionForClone(int argc, char* argv[]) {
 
         std::string bUrl = argv[2];
+        std::string dir = argv[3];
 
-        // PRINT_SUCCESS("------------- DATA RETRIEVED -------------");
-        // PRINT_HIGHLIGHT(rData);
+        if (dir[dir.size() - 1] != '/') dir += '/';
+        if (VestObjects::initializeVest(dir) == EXIT_FAILURE) return EXIT_FAILURE;
 
         std::string sha1Head {};
         VestRequest::getSha1Head(
@@ -194,23 +197,11 @@ namespace Vest {
             wSha1
         );
 
-        // PRINT_HIGHLIGHT("RAW: " + rData);
-
-        // for (uint8_t i {}; i < 12; i++) PRINT_HIGHLIGHT(rData[i]);
-        VestPack::processPack(rData, 12);
-        // std::string dData = VestFile::decompressData(rData);
-        // PRINT_HIGHLIGHT("READING THE FILE");
-
-        // VestPackParser::parsePackfile("./packfile.pack");
-
+        VestPack::processPack(rData, 12, dir);
 
         // PRINT_HIGHLIGHT("RAW: " + rData);
-        return EXIT_SUCCESS;
-
-
-        PRINT_HIGHLIGHT("CALL RESULT: " + std::to_string(r));
-        PRINT_HIGHLIGHT("CALL TO: " + std::string(bUrl + ".git/git-upload-pack"));
 
         return EXIT_SUCCESS;
     }
+
 }

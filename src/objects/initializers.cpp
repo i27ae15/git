@@ -11,12 +11,18 @@
 
 namespace VestObjects {
 
-    uint8_t initializeVest() {
-        std::filesystem::create_directory(".git");
-        std::filesystem::create_directory(".git/objects");
-        std::filesystem::create_directory(".git/refs");
+    uint8_t initializeVest(std::string dir) {
 
-        std::ofstream headFile(".git/HEAD");
+        if (!dir.empty()) {
+            if (dir[dir.size() - 1] != '/') dir += '/';
+            std::filesystem::create_directories(dir);
+        }
+
+        std::filesystem::create_directory(dir + ".git");
+        std::filesystem::create_directory(dir + ".git/objects");
+        std::filesystem::create_directory(dir + ".git/refs");
+
+        std::ofstream headFile(dir + ".git/HEAD");
         if (headFile.is_open()) {
             headFile << "ref: refs/heads/main\n";
             headFile.close();
@@ -32,13 +38,24 @@ namespace VestObjects {
     std::string createBlob(std::string& fPath) {
         std::vector<unsigned char> fContent = VestFile::readFile(fPath);
         std::string blob = prepareBlob(fContent);
-
         std::string sha1 = writeObject(blob);
+
         return sha1;
     }
 
-    std::string createCommit(std::string& tSha1, std::string& parent, std::string commitMsg) {
+    std::string createCommit(std::string& fContent, std::string dir) {
+        std::string commit = prepareCommit(fContent);
+        std::string sha1 = writeObject(commit, dir);
 
+        return sha1;
+    }
+
+    std::string createCommit(
+        std::string& tSha1,
+        std::string& parent,
+        std::string commitMsg,
+        std::string dir
+    ) {
         std::ostringstream fContent {};
         fContent << "tree " << tSha1 << "\x0A";
 
@@ -51,11 +68,8 @@ namespace VestObjects {
 
         // Prepend the header (fContent type and size) to the fContent body
         std::string fContentStr = fContent.str();
-        std::string commit = prepareCommit(fContentStr);
 
-        // PRINT_HIGHLIGHT(commit);
-        std::string sha1 = writeObject(commit);
-        return sha1;
+        return createCommit(fContentStr, dir);
     }
 
     std::string createTree(std::filesystem::path& root) {
@@ -95,7 +109,7 @@ namespace VestObjects {
 
         cSize--; // I don't know why I have to do this.
 
-        std::string fContent = "tree " + std::to_string(cSize + 1) + '\x00';
+        std::string fContent = "tree " + std::to_string(cSize) + '\x00';
         for (std::map<std::string, std::string>::iterator it {objs.begin()}; it != objs.end(); ++it) {
             fContent += it->second;
         }

@@ -136,7 +136,6 @@ namespace VestFile {
         stream.avail_out = uncompressed.size();
 
         size_t uSize {size};
-        bool resize {};
 
         // Keep decompressing until we have exactly 'objHeader.size' bytes output
         while (true) {
@@ -146,7 +145,6 @@ namespace VestFile {
 
             if (status != Z_OK) {
                 if (performResize && stream.avail_out == 0) {
-                    resize = true;
                     uncompressed.resize(uSize * 2);
                     stream.next_out = uncompressed.data() + uSize;
                     stream.avail_out = uSize;
@@ -162,7 +160,7 @@ namespace VestFile {
             }
         }
 
-        if (resize) uncompressed.resize(stream.total_out);
+        uncompressed.resize(stream.total_out);
         inflateEnd(&stream);
 
         size_t compressedUsed = compressedData.size() - stream.avail_in;

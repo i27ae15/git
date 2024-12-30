@@ -8,8 +8,8 @@
 
 namespace VestObjects {
 
-    std::string writeObject(std::string&& fContent);
-    std::string writeObject(std::string& fContent);
+    std::string writeObject(std::string&& fContent, std::string dirRoot = "");
+    std::string writeObject(std::string& fContent, std::string dirRoot = "");
 
     std::string prepareCommit(std::string& fContent);
     std::string prepareBlob(std::vector<uint8_t>& fileContent);

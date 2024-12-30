@@ -6,12 +6,14 @@
 
 namespace VestObjects {
 
-    uint8_t initializeVest();
+    uint8_t initializeVest(std::string dir = "");
 
+    std::string createCommit(std::string& fContent, std::string dir = "");
     std::string createCommit(
         std::string& tSha1,
         std::string& parent,
-        std::string commitMsg
+        std::string commitMsg,
+        std::string dir = ""
     );
 
     std::string createTree(std::filesystem::path& root);

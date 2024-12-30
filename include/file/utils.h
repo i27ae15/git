@@ -10,7 +10,6 @@ namespace VestFileUtils {
         std::string& sha1Hex,
         std::string& fileName
     );
-    std::string constructfPath(std::string fileID, std::string root);
 
     std::string computeSHA1(std::string& inputData);
     std::string computeSHA1(const std::vector<unsigned char>& data);

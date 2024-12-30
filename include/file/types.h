@@ -41,7 +41,7 @@ namespace VestTypes {
     };
 
     struct DecompressedData {
-        std::vector<unsigned char> data;
+        std::vector<uint8_t> data;
         z_stream stream;
         size_t compressedUsed;
 

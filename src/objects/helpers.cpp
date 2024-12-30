@@ -13,13 +13,13 @@ namespace VestObjects {
         return path;
     }
 
-    std::string writeObject(std::string& fContent) {
+    std::string writeObject(std::string& fContent, std::string dirRoot) {
         // PRINT_HIGHLIGHT(std::to_string(fContent.size()));
         std::vector<unsigned char> compressedContent = VestFile::compressData(fContent);
         std::string sha1 = VestFileUtils::computeSHA1(fContent);
 
         std::ostringstream pathToSaveFile {};
-        pathToSaveFile << ".git/objects/" << sha1[0] << sha1[1];
+        pathToSaveFile << dirRoot + ".git/objects/" << sha1[0] << sha1[1];
 
         std::filesystem::create_directory(pathToSaveFile.str());
         pathToSaveFile << '/' << sha1.substr(2); // Create the directory
@@ -29,19 +29,19 @@ namespace VestObjects {
         return sha1;
     }
 
-    std::string writeObject(std::string&& fContent) {
-        return writeObject(fContent);
+    std::string writeObject(std::string&& fContent, std::string dirRoot) {
+        return writeObject(fContent, dirRoot);
     }
 
     std::string prepareBlob(std::vector<unsigned char>& fContent) {
         // Allocate a vector to hold the header and file content
-        std::string header = "blob " + std::to_string(fContent.size()) + '\0';
+        std::string header = "blob " + std::to_string(fContent.size()) + '\x0A';
         header.append(fContent.begin(), fContent.end());
         return header;
     }
 
     std::string prepareCommit(std::string& fContent) {
-        std::string header = "commit " + std::to_string(fContent.size()) + '\0';
+        std::string header = "commit " + std::to_string(fContent.size()) + '\x00';
         header.append(fContent.begin(), fContent.end());
         return header;
     }

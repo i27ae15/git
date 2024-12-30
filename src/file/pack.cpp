@@ -13,30 +13,12 @@
 #include <file/pack.h>
 #include <file/file.h>
 
+#include <objects/initializers.h>
+#include <objects/helpers.h>
+
 #include <utils.h>
 
 namespace VestPack {
-
-    void byteToHex(uint8_t byte) {
-        std::ostringstream oss;
-        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
-        std::cout << oss.str();
-    }
-
-    void byteToBinary(uint8_t byte) {
-        std::string binary;
-        for (int i = 7; i >= 0; --i) { // Loop through each bit
-            binary += (byte & (1 << i)) ? '1' : '0';
-        }
-        std::cout << binary;
-    }
-
-    void printHexAndBinary(uint8_t byte) {
-        byteToHex(byte);
-        std::cout << " | ";
-        byteToBinary(byte);
-        std::cout << "\x0A";
-    }
 
     ObjectHeader parseObjectHeader(const std::vector<uint8_t>& rData, size_t& offset) {
         if (offset >= rData.size()) {
@@ -49,28 +31,20 @@ namespace VestPack {
 
         // Read the first byte
         uint8_t currentByte = rData[offset++];
-        printHexAndBinary(currentByte);
-        // printHexAndBinary('\x07');
         type = (currentByte >> 4) & 0x07; // (1) Extract type (bits 6-4)
-        // printHexAndBinary('\x0F');
         size = currentByte & 0x0F;        // (2) Extract size (bits 3-0)
 
         // Process continuation bytes if MSB is set
-        // printHexAndBinary('\x80');
         while (currentByte & 0x80) { // MSB (bit 7) is 1 => more bytes follow
 
             if (offset >= rData.size()) {
                 throw std::runtime_error("Invalid PACK file: Header is incomplete");
             }
             currentByte = rData[offset++];
-            printHexAndBinary(currentByte);
+            // printHexAndBinary(currentByte);
             size |= (currentByte & 0x7F) << shift; // (3) Append 7 bits to size
             shift += 7;
         }
-
-        PRINT_HIGHLIGHT("OBJ_TYPE: " + std::to_string(type));
-        PRINT_HIGHLIGHT("START: " + std::to_string(offset));
-        PRINT_HIGHLIGHT("SIZE: " + std::to_string(size));
 
         ObjectHeader obj {type, offset, size};
         return obj;
@@ -89,16 +63,81 @@ namespace VestPack {
                             (static_cast<uint8_t>(rData[offset + 6]) << 8)  |
                              static_cast<uint8_t>(rData[offset + 7]);
 
-        std::cout << "PACK version: " << version << ", Object count: " << nObjects << std::endl;
+        // std::cout << "PACK version: " << version << ", Object count: " << nObjects << std::endl;
 
         offset += 8;
         return nObjects;
     }
 
-    void processPack(std::vector<uint8_t>& rData, size_t offset) {
+    void byteToHex(uint8_t byte) {
+        std::ostringstream oss;
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
+        std::cout << "\\x" << oss.str();
+    }
+
+    void byteToBinary(uint8_t byte) {
+        std::string binary;
+        for (int i = 7; i >= 0; --i) { // Loop through each bit
+            binary += (byte & (1 << i)) ? '1' : '0';
+        }
+        std::cout << binary;
+    }
+
+    void printHexAndBinary(uint8_t byte) {
+        byteToHex(byte);
+        std::cout << " | ";
+        byteToBinary(byte);
+        std::cout << "\x0A";
+    }
+
+    void createFiles(uint8_t& fType, std::string& fContent, std::string& dir) {
+
+        std::string sha1 {};
+        std::string treeFile {};
+        std::uint16_t cTreeSize {};
+
+        switch (fType) {
+            case VestTypes::COMMIT:
+                std::cout << fContent;
+                std::cout << "\x0A";
+                sha1 = VestObjects::createCommit(fContent, dir);
+                PRINT_WARNING("SHA1 WRITTEN: " + sha1);
+                break;
+
+            case VestTypes::TREE:
+
+                for (uint8_t c : fContent) {
+                    cTreeSize++;
+                    byteToHex(c);
+                }
+
+                std::cout << "\x0A";
+
+                treeFile = "tree " + std::to_string(fContent.size()) + '\x00';
+                treeFile += fContent;
+
+                PRINT_HIGHLIGHT(
+                    "MANUAL SIZE: " + std::to_string(cTreeSize) +
+                    " | F_CONTENT.SIZE: " + std::to_string(fContent.size())
+                );
+
+                // std::cout << treeFile;
+                sha1 = VestObjects::writeObject(treeFile, dir);
+                PRINT_COLOR(BLUE, "SHA1 WRITTEN: " + sha1);
+                break;
+
+            default:
+                break;
+        }
+
+        if (fType == VestTypes::TREE || fType == VestTypes::COMMIT) {
+            PRINT_BIG_SEPARATION;
+        }
+    }
+
+    void processPack(std::vector<uint8_t>& rData, size_t offset, std::string& dir) {
 
         size_t _offset = offset;
-
         uint32_t nObjects = parsePackHeader(rData, _offset);
 
         for (uint32_t i {}; i < nObjects; i++) {
@@ -115,14 +154,12 @@ namespace VestPack {
                 nextObject, VestTypes::EXPAND_AS_NEEDED
             );
 
-            for (char c : dData.data) std::cout << c;
-            std::cout << "\x0A";
-            PRINT_BIG_SEPARATION;
+            std::string fContent = std::string(dData.data.begin(), dData.data.end());
+            createFiles(objHeader.type, fContent, dir);
 
-            // PRINT_SUCCESS("USED: " + std::to_string(dData.compressedUsed));
             _offset += dData.compressedUsed;
 
-            if (i == 10) break;
+            // if (i == 10) break;
         }
 
     }
