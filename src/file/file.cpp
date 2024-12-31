@@ -64,11 +64,9 @@ namespace VestFile {
         return commit;
     }
 
-    VestTypes::TreeFile readTreeFile(std::string& fContent) {
+    VestTypes::TreeFile* readTreeFile(std::string& fContent) {
 
-        VestTypes::TreeFile tree;
-
-        // std::cout << fContent << '\x0A';
+        VestTypes::TreeFile* tree = new VestTypes::TreeFile();
 
         for (uint16_t i {}; i < fContent.size(); i++) {
             std::string fType {};
@@ -89,7 +87,7 @@ namespace VestFile {
                 }
             }
 
-            tree.addLine(fType, fName, fContent.substr(i + 1, VestTypes::SHA_BYTES_SIZE));
+            tree->addLine(fType, fName, fContent.substr(i + 1, VestTypes::SHA_BYTES_SIZE));
             i += VestTypes::SHA_BYTES_SIZE;
         }
 

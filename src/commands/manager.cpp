@@ -197,6 +197,8 @@ namespace Vest {
             wSha1
         );
 
+        PRINT_HIGHLIGHT(dir);
+
         VestPack::processPack(rData, 12, dir);
 
         // PRINT_HIGHLIGHT("RAW: " + rData);

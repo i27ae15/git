@@ -31,7 +31,7 @@ namespace VestFile {
     );
 
     VestTypes::CommitFile* readCommit(std::string& fContent);
-    VestTypes::TreeFile readTreeFile(std::string& fContent);
+    VestTypes::TreeFile* readTreeFile(std::string& fContent);
 }
 
 #endif // VEST_FILE_H

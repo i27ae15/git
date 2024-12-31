@@ -91,25 +91,75 @@ namespace VestObjects {
 
     /**
      * ===================================================================
-     *                             Tree
+     *                           Tree Node
      * ===================================================================
     */
 
-    TreeNode::TreeNode(VestTypes::TreeFile* treeFile) : TreeNode(treeFile, nullptr) {}
+    TreeNode::TreeNode(VestTypes::TreeFile* treeFile, std::string folderName)
+    : TreeNode(treeFile, folderName, nullptr) {}
 
-    TreeNode::TreeNode(VestTypes::TreeFile* treeFile, TreeNode* parent)
-    : treeFile {treeFile}, parent {parent} {}
+    TreeNode::TreeNode(VestTypes::TreeFile* treeFile, std::string folderName, TreeNode* parent)
+    : treeFile {treeFile}, parent {parent}, index {}, completed {}, folderName {folderName} {}
 
     void TreeNode::addChild(TreeNode* node) {
         children.push_back(node);
     }
 
-    void TreeNode::addChild(VestTypes::TreeFile* treeFile) {
-        addChild(new TreeNode(treeFile));
+    void TreeNode::addChild(VestTypes::TreeFile* treeFile, std::string folderName) {
+        addChild(new TreeNode(treeFile, folderName));
     }
+
+    void TreeNode::incrementIndex() {
+        if (treeFile->tLines.size() > index) {
+            index++;
+        } else {
+            completed = true;
+        }
+    };
+
+    bool TreeNode::isCompleted() {return completed;}
+
+    std::string TreeNode::getFolderName() {return folderName;}
+
+    std::string TreeNode::getPath() {
+
+        TreeNode* currentNode {this};
+        std::string path {};
+
+        while (currentNode != nullptr) {
+            path = currentNode->getFolderName() + "/" + path;
+            currentNode = currentNode->parent;
+        }
+
+        return path;
+    }
+
+    VestTypes::TreeFileLine* TreeNode::getCurrentLine() {return treeFile->tLines[index];}
+
+    /**
+     * ===================================================================
+     *                           Tree
+     * ===================================================================
+    */
 
     Tree::Tree() : root {nullptr} {};
     Tree::~Tree() {};
 
+    TreeNode* Tree::getIndex() {return index;}
+    TreeNode* Tree::getRoot() {return root;}
+
+    void Tree::setIndex(TreeNode* node) {index = node;}
+
+    void Tree::setRoot(TreeNode* node) {
+        if (root == nullptr) setIndex(node);
+        root = node;
+    }
+
+    void Tree::setRoot(VestTypes::TreeFile* treeFile, std::string folderName) {
+        if (folderName[folderName.size() - 1] == '/') {
+            folderName = folderName.substr(0, folderName.size() - 1);
+        }
+        setRoot(new TreeNode(treeFile, folderName));
+    }
 
 }
