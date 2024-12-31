@@ -81,6 +81,10 @@ namespace VestPack {
         PRINT_WARNING("SHA1 WRITTEN: " + VestObjects::createCommit(fContent, dir));
     }
 
+    void writeTree(VestObjects::Tree* tree, std::string& fContent, std::string dir) {
+
+    }
+
     void createFiles(uint8_t& fType, std::string& fContent, std::string& dir) {
 
         std::string sha1 {};
@@ -123,43 +127,65 @@ namespace VestPack {
         }
     }
 
+    ObjectHeader processFile(std::vector<uint8_t>& rData, size_t& offset, std::string& fContent) {
+
+        ObjectHeader objHeader = parseObjectHeader(rData, offset);
+
+        if (objHeader.type == VestTypes::REF_DELTA) {
+            // PRINT_WARNING("REF_DELTA");
+            objHeader.start += VestTypes::SHA_BYTES_SIZE;
+            offset += VestTypes::SHA_BYTES_SIZE;
+        }
+
+        std::vector<uint8_t> nextObject(rData.begin() + objHeader.start, rData.end());
+        VestTypes::DecompressedData dData = VestFile::decompressData(
+            nextObject, VestTypes::EXPAND_AS_NEEDED
+        );
+
+        offset += dData.compressedUsed;
+        fContent = std::string(dData.data.begin(), dData.data.end());
+        return objHeader;
+    }
+
+    void processCommits(std::vector<uint8_t>& rData, size_t& offset, uint32_t& index, std::string& dir) {
+
+        std::string fContent {};
+        ObjectHeader ObjectHeader {};
+
+        while (true) {
+            ObjectHeader = processFile(rData, offset, fContent);
+        }
+
+
+    }
+
     void processPack(std::vector<uint8_t>& rData, size_t offset, std::string& dir) {
 
         size_t _offset = offset;
         uint32_t nObjects = parsePackHeader(rData, _offset);
 
         VestObjects::CommitLinkedList* commitList = new VestObjects::CommitLinkedList();
+        VestObjects::Tree* tree = new VestObjects::Tree();
+
+        bool isHead {true};
         bool p {true};
 
+        std::string fContent {};
         for (uint32_t i {}; i < nObjects; i++) {
-            ObjectHeader objHeader = parseObjectHeader(rData, _offset);
 
-            if (objHeader.type == VestTypes::REF_DELTA) {
-                // PRINT_WARNING("REF_DELTA");
-                objHeader.start += VestTypes::SHA_BYTES_SIZE;
-                _offset += VestTypes::SHA_BYTES_SIZE;
-            }
-
-            std::vector<uint8_t> nextObject(rData.begin() + objHeader.start, rData.end());
-            VestTypes::DecompressedData dData = VestFile::decompressData(
-                nextObject, VestTypes::EXPAND_AS_NEEDED
-            );
-
-            std::string fContent = std::string(dData.data.begin(), dData.data.end());
+            ObjectHeader objHeader = processFile(rData, _offset, fContent);
 
             switch (objHeader.type) {
                 case VestTypes::COMMIT:
                     writeCommit(commitList, fContent, dir);
                     break;
+
                 default:
                     if (p) { PRINT_HIGHLIGHT("PRINTING COMMITS"); commitList->printCommits(); }
                     p = false;
                     createFiles(objHeader.type, fContent, dir);
                     break;
             }
-
-
-            _offset += dData.compressedUsed;
 
             if (i == 10) break;
         }

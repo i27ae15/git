@@ -2,19 +2,19 @@
 
 namespace VestObjects {
 
-    class Node {
+    class CommitNode {
         public:
         VestTypes::CommitFile* commit;
-        Node* prev;
-        Node* next;
+        CommitNode* prev;
+        CommitNode* next;
 
-        Node(VestTypes::CommitFile* commit);
-        ~Node();
+        CommitNode(VestTypes::CommitFile* commit);
+        ~CommitNode();
 
-        void addNext(Node* node);
+        void addNext(CommitNode* node);
         void addNext(VestTypes::CommitFile* commit);
 
-        void addPrev(Node* node);
+        void addPrev(CommitNode* node);
         void addPrev(VestTypes::CommitFile* commit);
     };
 
@@ -25,19 +25,44 @@ namespace VestObjects {
         CommitLinkedList();
         ~CommitLinkedList();
 
-        void addNode(Node* node);
+        void addNode(CommitNode* node);
         void addNode(VestTypes::CommitFile* commit);
 
         void printCommits();
 
         private:
 
-        void setHead(Node* node);
-        void setTail(Node* node);
+        void setHead(CommitNode* node);
+        void setTail(CommitNode* node);
 
-        Node* head;
-        Node* current;
-        Node* tail;
+        CommitNode* head;
+        CommitNode* current;
+        CommitNode* tail;
 
+    };
+
+    class TreeNode {
+        public:
+
+        TreeNode(VestTypes::TreeFile* treeFile);
+        TreeNode(VestTypes::TreeFile* treeFile, TreeNode* parent);
+
+        void addChild(TreeNode* node);
+        void addChild(VestTypes::TreeFile* treeFile);
+
+        VestTypes::TreeFile* treeFile;
+        TreeNode* parent;
+        std::vector<TreeNode*> children;
+    };
+
+    class Tree {
+        public:
+
+        Tree();
+        ~Tree();
+
+        private:
+
+        TreeNode* root;
     };
 }

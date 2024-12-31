@@ -5,10 +5,10 @@
 
 namespace VestObjects {
 
-    Node::Node(VestTypes::CommitFile* commit) :
+    CommitNode::CommitNode(VestTypes::CommitFile* commit) :
         commit {commit}, prev {nullptr}, next {nullptr} {}
 
-    Node::~Node() {
+    CommitNode::~CommitNode() {
         if (prev != nullptr) prev->next = next;
         if (next != nullptr) next->prev = prev;
 
@@ -17,22 +17,22 @@ namespace VestObjects {
         commit = nullptr;
     }
 
-    void Node::addNext(Node* node) {
+    void CommitNode::addNext(CommitNode* node) {
         next = node;
         node->addPrev(this);
     }
 
-    void Node::addNext(VestTypes::CommitFile* commit) {
-        addNext(new Node(commit));
+    void CommitNode::addNext(VestTypes::CommitFile* commit) {
+        addNext(new CommitNode(commit));
     }
 
-    void Node::addPrev(Node* node) {
+    void CommitNode::addPrev(CommitNode* node) {
         prev = node;
         node->addNext(this);
     }
 
-    void Node::addPrev(VestTypes::CommitFile* commit) {
-        addPrev(new Node(commit));
+    void CommitNode::addPrev(VestTypes::CommitFile* commit) {
+        addPrev(new CommitNode(commit));
     }
 
     /**
@@ -46,7 +46,7 @@ namespace VestObjects {
 
     CommitLinkedList::~CommitLinkedList() {}
 
-    void CommitLinkedList::addNode(Node* node) {
+    void CommitLinkedList::addNode(CommitNode* node) {
 
         if (head == nullptr) setHead(node);
 
@@ -55,10 +55,10 @@ namespace VestObjects {
     }
 
     void CommitLinkedList::addNode(VestTypes::CommitFile* commit) {
-        addNode(new Node(commit));
+        addNode(new CommitNode(commit));
     }
 
-    void CommitLinkedList::setHead(Node* node) {
+    void CommitLinkedList::setHead(CommitNode* node) {
 
         if (head == nullptr) {head = node; return;}
 
@@ -68,7 +68,7 @@ namespace VestObjects {
         head = node;
     }
 
-    void CommitLinkedList::setTail(Node* node) {
+    void CommitLinkedList::setTail(CommitNode* node) {
         if (tail == nullptr) {tail = node; return;}
 
         tail->next = node;
@@ -79,7 +79,7 @@ namespace VestObjects {
 
     void CommitLinkedList::printCommits() {
 
-        Node* currentNode = head;
+        CommitNode* currentNode = head;
 
         while (currentNode != nullptr) {
             currentNode->commit->printCommitFile();
@@ -89,6 +89,27 @@ namespace VestObjects {
 
     }
 
+    /**
+     * ===================================================================
+     *                             Tree
+     * ===================================================================
+    */
+
+    TreeNode::TreeNode(VestTypes::TreeFile* treeFile) : TreeNode(treeFile, nullptr) {}
+
+    TreeNode::TreeNode(VestTypes::TreeFile* treeFile, TreeNode* parent)
+    : treeFile {treeFile}, parent {parent} {}
+
+    void TreeNode::addChild(TreeNode* node) {
+        children.push_back(node);
+    }
+
+    void TreeNode::addChild(VestTypes::TreeFile* treeFile) {
+        addChild(new TreeNode(treeFile));
+    }
+
+    Tree::Tree() : root {nullptr} {};
+    Tree::~Tree() {};
 
 
 }
