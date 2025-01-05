@@ -24,13 +24,34 @@ namespace VestPack {
     };
 
     ObjectHeader parseObjectHeader(const std::vector<uint8_t>& rData, size_t& offset);
-    ObjectHeader setFileContent(
+
+    uint32_t parsePackHeader(const std::vector<uint8_t>& rData, size_t& offset);
+
+    void setFileContent(
+        const size_t& startAt,
         std::vector<uint8_t>& rData,
         size_t& offset,
         std::string& fContent
     );
 
-    uint32_t parsePackHeader(const std::vector<uint8_t>& rData, size_t& offset);
+    void copyDelta(
+        std::string& baseBlob,
+        std::string& objBlob,
+        std::vector<uint8_t>& rData,
+        size_t& offset
+    );
+
+    void addDelta(
+        std::string& blob,
+        std::vector<uint8_t>& rData,
+        size_t& offset
+    );
+
+    void processRefDelta(
+        size_t& offset,
+        std::string& baseBlob,
+        std::vector<uint8_t>& rData
+    );
 
     void processCommit(
         VestObjects::CommitLinkedList* commitList,
@@ -50,6 +71,7 @@ namespace VestPack {
         VestObjects::TreeNode* parent,
         std::string& fContent,
         std::string& dir,
+        std::string& lastBlob,
         bool& writeOnFile
     );
 

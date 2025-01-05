@@ -32,3 +32,10 @@
 #define PRINT_ERROR(text)        std::cout << RED    << text << RESET << "\x0A"
 #define PRINT_HIGHLIGHT(text)    std::cout << PINK   << text << RESET << "\x0A"
 #define PRINT_COLOR(color, text) std::cout << color  << text << RESET << "\x0A"
+
+#define PRINT_SUCCESS_NO_SPACE(text)      std::cout << GREEN  << text << RESET
+#define PRINT_WARNING_NO_SPACE(text)      std::cout << YELLOW << text << RESET
+#define PRINT_ERROR_NO_SPACE(text)        std::cout << RED    << text << RESET
+#define PRINT_HIGHLIGHT_NO_SPACE(text)    std::cout << PINK   << text << RESET
+#define PRINT_COLOR_NO_SPACE(color, text) std::cout << color  << text << RESET
+
