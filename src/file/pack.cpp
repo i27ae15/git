@@ -95,70 +95,60 @@ namespace VestPack {
         size_t& offset
     ) {
 
-        // verify that infact the first bit is a 1
+        // verify that in fact the first bit is a 1
         uint8_t cByte = fContent[offset];
         if ((cByte & 0x80) == 0) return; // MSB is 0, not a copy command.
-
         // PRINT_WARNING("IN COPY_DELTA");
 
-        PRINT_HIGHLIGHT("BINARY:" + VestFileUtils::byteToBinary(cByte));
-        PRINT_HIGHLIGHT("HEX:" + VestFileUtils::byteToHex(cByte));
-
-        // We know bit7 == 1 -> copy command.
-        uint32_t offsetVal = 0;
-        uint32_t sizeVal   = 0;
+        uint32_t startCopyAt = 0;
+        uint32_t bytesToCopy = 0;
 
         // We'll consume bytes from fContent after cByte:
-        size_t i = offset + 1;
-
-        // If bit0 is set, read one byte for offset’s low 8 bits
-        if (cByte & 0x01) {
-            offsetVal |= (unsigned char)fContent.at(i++) << 0;
-        }
-        // If bit1 is set, read one byte for offset’s next 8 bits
-        if (cByte & 0x02) {
-            offsetVal |= (unsigned char)fContent.at(i++) << 8;
-        }
-        if (cByte & 0x04) {
-            offsetVal |= (unsigned char)fContent.at(i++) << 16;
-        }
-        if (cByte & 0x08) {
-            offsetVal |= (unsigned char)fContent.at(i++) << 24;
-        }
-
-        // For the size:
-        if (cByte & 0x10) {
-            sizeVal |= (unsigned char)fContent.at(i++) << 0;
-        }
-        if (cByte & 0x20) {
-            sizeVal |= (unsigned char)fContent.at(i++) << 8;
-        }
-        if (cByte & 0x40) {
-            sizeVal |= (unsigned char)fContent.at(i++) << 16;
-        }
-        if (sizeVal == 0) {
-            sizeVal = 0x10000;
-        }
-
-        PRINT_HIGHLIGHT("OFFSET_val: " + std::to_string(offsetVal));
-        PRINT_HIGHLIGHT("SIZE_VAL: " + std::to_string(sizeVal));
-
         offset++;
 
-        auto combineBytes = [](std::string& fContent, size_t& offset, uint8_t bytesToCount) -> uint32_t {
-            uint32_t value {};
+        // Calculating the offset - bits : 0 - 3
+        {
+            // If bit0 is set, read one byte for offset’s low 8 bits
+            if (cByte & 0x01) {
+                startCopyAt |= (unsigned char)fContent.at(offset++) << 0;
+            }
+            // If bit1 is set, read one byte for offset’s next 8 bits
+            if (cByte & 0x02) {
+                startCopyAt |= (unsigned char)fContent.at(offset++) << 8;
+            }
+            if (cByte & 0x04) {
+                startCopyAt |= (unsigned char)fContent.at(offset++) << 16;
+            }
+            if (cByte & 0x08) {
+                startCopyAt |= (unsigned char)fContent.at(offset++) << 24;
+            }
+        }
 
-            while (bytesToCount--) value = (value << 8) | fContent.at(offset++);
-            return value;
-        };
-
-        uint32_t startCopyAt = combineBytes(fContent, offset, offsetVal);
-        uint32_t bytesToCopy = combineBytes(fContent, offset, sizeVal);
-
-        // std::cout << baseBlob << "\x0A";
+        // Calculating the size - bits : 4 - 6
+        {
+            if (cByte & 0x10) {
+                bytesToCopy |= (unsigned char)fContent.at(offset++) << 0;
+            }
+            if (cByte & 0x20) {
+                bytesToCopy |= (unsigned char)fContent.at(offset++) << 8;
+            }
+            if (cByte & 0x40) {
+                bytesToCopy |= (unsigned char)fContent.at(offset++) << 16;
+            }
+            if (bytesToCopy == 0) {
+                bytesToCopy = 0x10000;
+            }
+        }
 
         // At this point we have everything to start the copy into objBlob
-        for (uint32_t i = 0; i < bytesToCopy; i++) objBlob += baseBlob[startCopyAt + i];
+        std::string toCopy {};
+        for (uint32_t i = 0; i < bytesToCopy; i++) toCopy += baseBlob[startCopyAt + i];
+        // PRINT_DELTA("TO COPY: ");
+        // std::cout << toCopy << "\x0A";
+
+        // PRINT_DELTA("RESULT OF COPY: ");
+        objBlob += toCopy;
+        // std::cout << objBlob << "\x0A";
     }
 
     void addDelta(
@@ -167,32 +157,39 @@ namespace VestPack {
         size_t& offset
     ) {
 
-        if (fContent[offset] & 0x80 != 0) return; // MSB is 1, not an add command.
-        offset++;
-        PRINT_WARNING("IN ADD_DELTA");
+        if ((fContent[offset] & 0x80) != 0) return; // MSB is 1, not an add command.
 
-        std::string dataToAdd {};
-        std::vector<uint8_t> v(fContent.begin(), fContent.end());
-        // setFileContent(offset, v, offset, dataToAdd);
+        std::string toAdd = fContent.substr(offset + 1, static_cast<int>(fContent[offset]));
+        blob += toAdd; offset += toAdd.size() + 1;
 
-        blob += fContent.substr(offset);
+        // PRINT_SML_SEPARATION;
+        // PRINT_DELTA("TO ADD: ");
+        // std::cout << toAdd << "\x0A";
+
+        // PRINT_DELTA("RESULT: ");
+        // std::cout << blob << "\x0A";
+        // PRINT_SML_SEPARATION;
+
     }
 
     void processRefDelta(
+        VestObjects::TreeNode* parent,
         size_t& offset,
+        std::string& dir,
         std::string& baseBlob,
-        std::vector<uint8_t>& rData
+        std::vector<uint8_t>& rData,
+        bool& writeOnFile,
+        bool& checkDelta
     ) {
+
+        size_t originalOffset = offset;
 
         // Let's get the SHA1 for the ref object
         std::string refDeltaSha1 {};
-        size_t prevInt = offset;
         for (uint8_t _ {}; VestTypes::SHA_BYTES_SIZE > _; _++) {
             refDeltaSha1 += VestFileUtils::byteToHex(rData.at(offset));
             offset++;
         }
-
-        // PRINT_HIGHLIGHT("REF_DELTA PARENT SHA1: " + refDeltaSha1);
 
         std::string fContent {};
         (void)setFileContent(offset, rData, offset, fContent);
@@ -220,43 +217,60 @@ namespace VestPack {
         uint64_t bSize = parseRefDeltaSizes(fContent, internalOffset);
         uint64_t rSize = parseRefDeltaSizes(fContent, internalOffset);
 
-        // PRINT_HIGHLIGHT("B_SIZE: " + std::to_string(bSize));
-        // PRINT_HIGHLIGHT("R_SIZE: " + std::to_string(rSize));
-        // PRINT_WARNING("OFFSET: " + std::to_string(offset));
-        // PRINT_WARNING("INTERNAL_OFFSET: " + std::to_string(internalOffset));
-
-        // std::cout << fContent << "\x0A";
-
-        // Now, we have to start copying from the blob
-        std::string newBlob {}; newBlob.resize(rSize);
+        std::string newBlob {};
         bool inRef {true};
 
-        while (inRef) {
+        // Now, we have to start copying from the blob or add the new values
+        while (inRef && rSize > newBlob.size()) {
 
             uint8_t cByte = fContent[internalOffset];
 
             switch (cByte & 0x80) {
                 case 0x80:
-                    copyDelta(baseBlob, newBlob, fContent, internalOffset);
+                    (void)copyDelta(baseBlob, newBlob, fContent, internalOffset);
                     break;
 
                 case 0x00:
-                    addDelta(baseBlob, fContent, internalOffset);
+                    (void)addDelta(newBlob, fContent, internalOffset);
                     break;
 
                 default:
+                    PRINT_WARNING("GETTING OUT");
                     inRef = false;
                     break;
             }
 
         }
 
-        // At this point or newBlob object shoudl be completed, so we need to compute the SHA1
+        // At this point our newBlob object should be completed, so we need to compute the SHA1
         // Of it, write the REF_DELTA under the same SHA1 with the newBlob content, not with the
         // content of the REF_DELTA
+        baseBlob = newBlob;
 
-        std::string sha1 = VestFileUtils::computeSHA1(newBlob);
-        PRINT_HIGHLIGHT("SHA1 FOR REF_DELTA: " + sha1);
+        // Compute hash
+        std::string dataToComputeSha1 = "blob " + std::to_string(newBlob.size()) + '\x00';
+        dataToComputeSha1 += newBlob;
+        std::string sha1 = VestFileUtils::computeSHA1(dataToComputeSha1);
+        (void)VestObjects::writeObject(
+            std::string(rData.begin() + originalOffset, rData.end()), dir, sha1
+        );
+
+        // Check if the sha1 is the same as the one we have on queue
+        VestTypes::TreeFileLine* treeLine = parent->getCurrentLine();
+        PRINT_DELTA("SHA1 TO WRITE: " + sha1);
+        if (sha1 != treeLine->sha1()) return; // This indicates that there must be another delta to parse
+        // If we reach here, we have found the correct sha1, so we can increment the line
+
+        checkDelta = false;
+        parent->incrementIndex();
+        std::string path = parent->getPath() + treeLine->fName;
+        PRINT_DELTA("PATH TO WRITE: " + path);
+
+        VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
+
+        PRINT_DELTA("DELTA WRITTEN: " + sha1);
+        PRINT_SML_SEPARATION;
+
     }
 
     void processCommit(
@@ -266,8 +280,7 @@ namespace VestPack {
     ) {
         VestTypes::CommitFile* commitFile = VestFile::readCommit(fContent);
         commitList->addNode(commitFile);
-        std::cout << fContent << "\x0A";
-        PRINT_WARNING("COMMIT SHA1 WRITTEN: " + VestObjects::createCommit(fContent, dir));
+        PRINT_COMMIT("COMMIT SHA1 WRITTEN: " + VestObjects::createCommit(fContent, dir));
     }
 
     void processTree(
@@ -285,10 +298,11 @@ namespace VestPack {
         fileToWrite += fContent;
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
 
-        PRINT_HIGHLIGHT("TREE SHA1: " + sha1);
+        PRINT_SML_SEPARATION;
         for (VestTypes::TreeFileLine* t : treeFile->tLines) {
-            PRINT_HIGHLIGHT("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
+            PRINT_TREE("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
         }
+        PRINT_TREE("TREE SHA1: " + sha1);
         PRINT_SML_SEPARATION;
 
         if (treeClass->getRoot() == nullptr) {
@@ -300,8 +314,8 @@ namespace VestPack {
         if (sha1 != treeLine->sha1()) {
             PRINT_ERROR("TREE: NOT CURRENT SHA1: " + treeLine->sha1());
             throw std::runtime_error("");
-            return;
         }
+
         parent->incrementIndex();
 
         // We have to check the parent at this point, and mark that line as read
@@ -317,11 +331,11 @@ namespace VestPack {
         if (!writeOnFile) return;
 
         std::string path = currentNode->getPath();
-        PRINT_HIGHLIGHT("PATH TO WRITE: " + path);
+        PRINT_TREE("PATH TO WRITE: " + path);
 
         std::filesystem::create_directory(path);
 
-        PRINT_HIGHLIGHT("TREE WRITTEN: " + sha1);
+        PRINT_TREE("TREE WRITTEN: " + sha1);
         PRINT_SML_SEPARATION;
 
     }
@@ -331,41 +345,21 @@ namespace VestPack {
         std::string& fContent,
         std::string& dir,
         std::string& lastBlob,
-        bool& writeOnFile
+        bool& writeOnFile,
+        bool& checkDelta
     ) {
 
-        fContent += "\x0A";
-
-        int count {};
-        int pink_c {};
-
-        // for (char c : fContent) {
-        //     count++;
-        //     if (c == '\x0A') PRINT_WARNING_NO_SPACE("\\x0A");
-        //     if (c == ' ') {
-        //         PRINT_HIGHLIGHT_NO_SPACE(std::to_string(pink_c) + " ");
-        //         pink_c++;
-        //         continue;
-        //     }
-        //     std::cout << c;
-        // }
-
-        // PRINT_WARNING("TOTAL COUNT: " + std::to_string(count));
-
-        std::string fileToWrite = "blob " + std::to_string(fContent.size()) + "\x00";
+        std::string fileToWrite = "blob " + std::to_string(fContent.size()) + '\x00';
         fileToWrite += fContent;
         lastBlob = fContent;
 
-        // std::cout << fileToWrite;
-        // PRINT_SML_SEPARATION;
-
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
-        PRINT_COLOR(BLUE, "BLOB SHA1: " + sha1);
+        PRINT_BLOB("BLOB SHA1: " + sha1);
 
         VestTypes::TreeFileLine* treeLine = parent->getCurrentLine();
         if (sha1 != treeLine->sha1()) {
             PRINT_ERROR("BLOB: NOT CURRENT SHA1: " + treeLine->sha1());
-            // throw std::runtime_error("");
+            checkDelta = true;
             return;
         }
         parent->incrementIndex();
@@ -373,11 +367,11 @@ namespace VestPack {
         if (!writeOnFile) return;
 
         std::string path = parent->getPath() + treeLine->fName;
-        PRINT_COLOR(BLUE, "PATH TO WRITE: " + path);
+        PRINT_BLOB("PATH TO WRITE: " + path);
 
-        VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
+        // VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
 
-        PRINT_COLOR(BLUE, "BLOB WRITTEN: " + sha1);
+        PRINT_BLOB("BLOB WRITTEN: " + sha1);
         PRINT_SML_SEPARATION;
     }
 
@@ -395,15 +389,21 @@ namespace VestPack {
         std::string lastBlob {};
 
         bool isHead {true};
-        bool p {true};
+        bool mustBeDelta {};
 
         for (uint32_t i {}; i < nObjects; i++) {
 
             ObjectHeader objHeader = parseObjectHeader(rData, _offset);
 
             if (objHeader.type == VestTypes::REF_DELTA) {
-                (void)processRefDelta(_offset, lastBlob, rData);
+                PRINT_DELTA("PROCESSING REF_DELTA");
+                (void)processRefDelta(tree->getIndex(), _offset, dir, lastBlob, rData, isHead, mustBeDelta);
                 continue;
+            }
+
+            if (mustBeDelta) {
+                PRINT_ERROR("NEXT FILE MUST BE DELTA AND IS NOT!");
+                throw std::runtime_error("");
             }
 
             std::string fContent {};
@@ -411,15 +411,18 @@ namespace VestPack {
 
             switch (objHeader.type) {
                 case VestTypes::COMMIT:
+                    PRINT_COMMIT("PROCESSING COMMIT");
                     (void)processCommit(commitList, fContent, dir);
                     break;
 
                 case VestTypes::TREE:
+                    PRINT_TREE("PROCESSING TREE");
                     (void)processTree(tree, tree->getIndex(), fContent, dir, isHead);
                     break;
 
                 case VestTypes::BLOB:
-                    (void)processBlob(tree->getIndex(), fContent, dir, lastBlob, isHead);
+                    PRINT_BLOB("PROCESSING BLOB");
+                    (void)processBlob(tree->getIndex(), fContent, dir, lastBlob, isHead, mustBeDelta);
                     break;
 
                 case VestTypes::OFS_DELTA:

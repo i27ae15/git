@@ -37,20 +37,24 @@ namespace VestPack {
     void copyDelta(
         std::string& baseBlob,
         std::string& objBlob,
-        std::vector<uint8_t>& rData,
+        std::string& rData,
         size_t& offset
     );
 
     void addDelta(
         std::string& blob,
-        std::vector<uint8_t>& rData,
+        std::string& rData,
         size_t& offset
     );
 
     void processRefDelta(
+        VestObjects::TreeNode* parent,
         size_t& offset,
+        std::string& dir,
         std::string& baseBlob,
-        std::vector<uint8_t>& rData
+        std::vector<uint8_t>& rData,
+        bool& writeOnfile,
+        bool& checkDelta
     );
 
     void processCommit(
@@ -72,7 +76,8 @@ namespace VestPack {
         std::string& fContent,
         std::string& dir,
         std::string& lastBlob,
-        bool& writeOnFile
+        bool& writeOnFile,
+        bool& checkDelta
     );
 
     void processPack(

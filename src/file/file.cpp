@@ -25,9 +25,32 @@ namespace VestFile {
     }
 
     void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
-        std::ofstream outFile(fPath, std::ios::binary);
+        std::filesystem::path filePath = fPath;
+        if (filePath.has_parent_path() && !std::filesystem::exists(filePath.parent_path())) {
+            PRINT_ERROR("PARENT DIRECTOY DOES NOT EXISTS: " + filePath.parent_path().string());
+        }
 
-        if (!outFile) throw std::runtime_error("FAILED TO OPEN " + fPath);
+        if (std::filesystem::exists(filePath)) {
+            if (std::filesystem::is_regular_file(filePath)) {
+                std::cout << filePath << " is a file.\n";
+            } else if (std::filesystem::is_directory(filePath)) {
+                std::cout << filePath << " is a directory.\n";
+                // PRINT_ERROR(absPath.string() + " IS A DIRECTORY");
+            } else {
+                std::cout << filePath << " is neither a regular file nor a directory.\n";
+            }
+        } else {
+            std::cout << "The path does not exist.\n";
+        }
+
+        // std::string p = filePath.parent_path().string();
+        // PRINT_SUCCESS("PARENT FOLDER: " + p + " | FILE_NAME: " + filePath.filename().string());
+
+        std::ofstream outFile(fPath, std::ios::binary);
+        if (!outFile) {
+            PRINT_ERROR("FAILED TO OPEN " + fPath);
+            throw std::runtime_error("");
+        }
         outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
     }
 
