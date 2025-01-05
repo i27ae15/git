@@ -14,8 +14,11 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 # Find OpenSSL
 find_package(OpenSSL REQUIRED)
 
+# Find libcurl
+find_package(CURL REQUIRED)
+
 # Add the executable
 add_executable(git ${SOURCE_FILES})
 
-# Link libraries (zlib and OpenSSL's crypto library)
-target_link_libraries(git OpenSSL::Crypto -lz)
+# Link libraries (zlib, OpenSSL, and libcurl)
+target_link_libraries(git OpenSSL::Crypto -lz CURL::libcurl)

@@ -15,6 +15,7 @@ namespace Vest {
     constexpr const char* LS_TREE = "ls-tree";
     constexpr const char* WRITE_TREE = "write-tree";
     constexpr const char* COMMIT_TREE = "commit-tree";
+    constexpr const char* CLONE = "clone";
 
     class CommandManager {
 
@@ -26,22 +27,18 @@ namespace Vest {
 
         private:
 
-            uint8_t actionForInit(int argc, char* argv[]);
-            uint8_t actionForCatFile(int argc, char* argv[]);
-            uint8_t actionForHashObject(int argc, char* argv[]);
-            uint8_t actionForLsTree(int argc, char* argv[]);
-            uint8_t actionForWriteTree(int argc, char* argv[]);
-            uint8_t actionForCommitTree(int argc, char* argv[]);
-
-            std::vector<unsigned char> prepareBlob(
-                std::vector<unsigned char>& fileContent
-            );
+            uint8_t actionForInit       (int argc, char* argv[]);
+            uint8_t actionForCatFile    (int argc, char* argv[]);
+            uint8_t actionForHashObject (int argc, char* argv[]);
+            uint8_t actionForLsTree     (int argc, char* argv[]);
+            uint8_t actionForWriteTree  (int argc, char* argv[]);
+            uint8_t actionForCommitTree (int argc, char* argv[]);
+            uint8_t actionForClone      (int argc, char* argv[]);
 
             std::unordered_map<
                 std::string,
                 std::function<uint8_t(int argc, char* argv[])>
             > actions;
-
 
     };
 }

@@ -1,10 +1,33 @@
 #include <string>
+#include <iostream>
 #include <openssl/sha.h>
 
 #include <file/types.h>
 #include <file/utils.h>
 
 namespace VestFileUtils {
+
+    std::string byteToHex(uint8_t byte) {
+        std::ostringstream oss;
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
+        return oss.str();
+    }
+
+    std::string byteToBinary(uint8_t byte) {
+        std::string binary;
+        for (int i = 7; i >= 0; --i) { // Loop through each bit
+            binary += (byte & (1 << i)) ? '1' : '0';
+        }
+        return binary;
+    }
+
+    void printHexAndBinary(uint8_t byte) {
+        byteToHex(byte);
+        std::cout << " | ";
+        byteToBinary(byte);
+        std::cout << "\x0A";
+    }
+
     std::string constructFileLine(
         VestTypes::FileType& fileType,
         std::string& sha1Hex,

@@ -5,12 +5,16 @@
 #include <file/types.h>
 
 namespace VestFileUtils {
+
+    std::string byteToHex(uint8_t byte);
+    std::string byteToBinary(uint8_t byte);
+    void printHexAndBinary(uint8_t byte);
+
     std::string constructFileLine(
         VestTypes::FileType& fileType,
         std::string& sha1Hex,
         std::string& fileName
     );
-    std::string constructfPath(std::string fileID, std::string root);
 
     std::string computeSHA1(std::string& inputData);
     std::string computeSHA1(const std::vector<unsigned char>& data);
