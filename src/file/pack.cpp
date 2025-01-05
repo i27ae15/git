@@ -195,7 +195,7 @@ namespace VestPack {
         // PRINT_HIGHLIGHT("REF_DELTA PARENT SHA1: " + refDeltaSha1);
 
         std::string fContent {};
-        setFileContent(offset, rData, offset, fContent);
+        (void)setFileContent(offset, rData, offset, fContent);
 
         auto parseRefDeltaSizes = [](std::string& rData, size_t& offset) -> uint64_t {
 
