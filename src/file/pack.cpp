@@ -173,7 +173,9 @@ namespace VestPack {
     }
 
     void processRefDelta(
+        VestObjects::Tree* treeClass,
         VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         size_t& offset,
         std::string& dir,
         std::string& baseBlob,
@@ -251,10 +253,14 @@ namespace VestPack {
         std::string dataToComputeSha1 = "blob " + std::to_string(newBlob.size()) + '\x00';
         dataToComputeSha1 += newBlob;
         std::string sha1 = VestFileUtils::computeSHA1(dataToComputeSha1);
+        packIndex.addSha1(sha1);
         (void)VestObjects::writeObject(
             std::string(rData.begin() + originalOffset, rData.end()), dir, sha1
         );
 
+        PRINT_DELTA("SHA1_PARENT: " + refDeltaSha1);
+        PRINT_DELTA("SHA1: " + sha1);
+        std::cout << baseBlob << "\x0A";
         // Check if the sha1 is the same as the one we have on queue
         VestTypes::TreeFileLine* treeLine = parent->getCurrentLine();
         PRINT_DELTA("SHA1 TO WRITE: " + sha1);
@@ -262,30 +268,35 @@ namespace VestPack {
         // If we reach here, we have found the correct sha1, so we can increment the line
 
         checkDelta = false;
-        parent->incrementIndex();
-        std::string path = parent->getPath() + treeLine->fName;
-        PRINT_DELTA("PATH TO WRITE: " + path);
 
+        std::string path = parent->getPath() + treeLine->fName;
         VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
 
-        PRINT_DELTA("DELTA WRITTEN: " + sha1);
-        PRINT_SML_SEPARATION;
+        parent->incrementIndex();
+        if (parent->isCompleted()) treeClass->setIndex(parent->parent);
 
     }
 
     void processCommit(
         VestObjects::CommitLinkedList* commitList,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir
     ) {
         VestTypes::CommitFile* commitFile = VestFile::readCommit(fContent);
         commitList->addNode(commitFile);
-        PRINT_COMMIT("COMMIT SHA1 WRITTEN: " + VestObjects::createCommit(fContent, dir));
+
+        std::string sha1 = VestObjects::createCommit(fContent, dir);
+        packIndex.addSha1(sha1);
+
+        PRINT_COMMIT("COMMIT SHA1 WRITTEN: " + sha1);
     }
 
     void processTree(
-        VestObjects::Tree* treeClass,
+        VestObjects::CommitLinkedList* commitList,
+        VestObjects::Tree*& treeClass,
         VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
         bool& writeOnFile
@@ -297,28 +308,62 @@ namespace VestPack {
         std::string fileToWrite = "tree " + std::to_string(fContent.size()) + '\x00';
         fileToWrite += fContent;
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
+        packIndex.addSha1(sha1);
 
         PRINT_SML_SEPARATION;
         for (VestTypes::TreeFileLine* t : treeFile->tLines) {
             PRINT_TREE("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
         }
-        PRINT_TREE("TREE SHA1: " + sha1);
+        PRINT_TREE("TREE SHA1: " + sha1 + " | SIZE: " + std::to_string(treeFile->tLines.size()));
         PRINT_SML_SEPARATION;
+
+        if (commitList->getCurrent()->commit->tSha1 == sha1) {
+            // We gotta reset the tree
+            PRINT_HIGHLIGHT("RESET TREE");
+            delete treeClass;
+            treeClass = new VestObjects::Tree();
+            commitList->incrementIndex();
+        }
 
         if (treeClass->getRoot() == nullptr) {
             treeClass->setRoot(treeFile, dir);
             return;
         }
 
+        bool reRun {};
         VestTypes::TreeFileLine* treeLine = parent->getCurrentLine();
         if (sha1 != treeLine->sha1()) {
-            PRINT_ERROR("TREE: NOT CURRENT SHA1: " + treeLine->sha1());
-            throw std::runtime_error("");
+
+
+            if (!packIndex.exists(treeLine->sha1())) {
+                PRINT_ERROR("TREE: NOT CURRENT SHA1: " + treeLine->sha1());
+                throw std::runtime_error("");
+            }
+
+            // Modify this to add a better sha1 handleing
+            PRINT_SUCCESS("TREE: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
+            reRun = true;
         }
 
         parent->incrementIndex();
 
+        if (reRun) {
+
+            if (parent->isCompleted()) {
+                if (parent->parent->isCompleted()) {
+                    PRINT_SUCCESS("YUP ON TREE");
+                    treeClass->setIndex(parent->parent->parent);
+                } else {
+                    treeClass->setIndex(parent->parent);
+                }
+            };
+            processTree(commitList, treeClass, treeClass->getIndex(), packIndex, fContent, dir, writeOnFile);
+            return;
+        }
+
+
         // We have to check the parent at this point, and mark that line as read
+        PRINT_HIGHLIGHT("BEFORE CURRENT NODE");
         VestObjects::TreeNode* currentNode = new VestObjects::TreeNode(treeFile, treeLine->fName, parent);
         parent->addChild(currentNode);
 
@@ -331,17 +376,20 @@ namespace VestPack {
         if (!writeOnFile) return;
 
         std::string path = currentNode->getPath();
-        PRINT_TREE("PATH TO WRITE: " + path);
+        // PRINT_TREE("PATH TO WRITE: " + path);
 
-        std::filesystem::create_directory(path);
+        if (!std::filesystem::exists(path)) std::filesystem::create_directory(path);
 
-        PRINT_TREE("TREE WRITTEN: " + sha1);
-        PRINT_SML_SEPARATION;
+        // PRINT_TREE("TREE WRITTEN: " + sha1);
+        // PRINT_SML_SEPARATION;
+        // if (parent->isCompleted()) treeClass->setIndex(parent->parent);
 
     }
 
     void processBlob(
+        VestObjects::Tree* treeClass,
         VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
         std::string& lastBlob,
@@ -353,26 +401,50 @@ namespace VestPack {
         fileToWrite += fContent;
         lastBlob = fContent;
 
+        std::vector<uint8_t> vContent {};
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
-        PRINT_BLOB("BLOB SHA1: " + sha1);
 
         VestTypes::TreeFileLine* treeLine = parent->getCurrentLine();
+        bool reRun {};
         if (sha1 != treeLine->sha1()) {
-            PRINT_ERROR("BLOB: NOT CURRENT SHA1: " + treeLine->sha1());
-            checkDelta = true;
+
+            if (!packIndex.exists(treeLine->sha1())) {
+                PRINT_ERROR("BLOB: NOT CURRENT SHA1: " + treeLine->sha1() + " | AND BLOB: " + sha1);
+                checkDelta = true;
+                return;
+            }
+
+            // Modify this to add a better sha1 handleing
+            PRINT_SUCCESS("SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
+            std::string path = parent->getPath() + treeLine->fName;
+
+            std::string fContent = treeLine->sha1();
+            VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
+            reRun = true;
+        }
+
+        parent->incrementIndex();
+        if (reRun) {
+            processBlob(treeClass, parent, packIndex, fContent, dir, lastBlob, writeOnFile, checkDelta);
             return;
         }
-        parent->incrementIndex();
 
+        packIndex.addSha1(sha1);
         if (!writeOnFile) return;
-
         std::string path = parent->getPath() + treeLine->fName;
-        PRINT_BLOB("PATH TO WRITE: " + path);
-
-        // VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
+        VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
 
         PRINT_BLOB("BLOB WRITTEN: " + sha1);
         PRINT_SML_SEPARATION;
+        if (parent->isCompleted()) {
+            PRINT_BLOB("BLOB_COMPLETED: " + parent->parent->getPreviousLine()->sha1());
+            if (parent->parent->isCompleted()) {
+                PRINT_SUCCESS("YUP");
+                treeClass->setIndex(parent->parent->parent);
+            } else {
+                treeClass->setIndex(parent->parent);
+            }
+        }
     }
 
     void processPack(
@@ -386,6 +458,7 @@ namespace VestPack {
 
         VestObjects::CommitLinkedList* commitList = new VestObjects::CommitLinkedList();
         VestObjects::Tree* tree = new VestObjects::Tree();
+        VestObjects::PackIndex packIndex {};
         std::string lastBlob {};
 
         bool isHead {true};
@@ -394,12 +467,15 @@ namespace VestPack {
         for (uint32_t i {}; i < nObjects; i++) {
 
             ObjectHeader objHeader = parseObjectHeader(rData, _offset);
+            VestObjects::TreeNode* treeIdx = tree->getIndex();
 
             if (objHeader.type == VestTypes::REF_DELTA) {
                 PRINT_DELTA("PROCESSING REF_DELTA");
-                (void)processRefDelta(tree->getIndex(), _offset, dir, lastBlob, rData, isHead, mustBeDelta);
+                (void)processRefDelta(tree, treeIdx, packIndex, _offset, dir, lastBlob, rData, isHead, mustBeDelta);
                 continue;
             }
+
+            PRINT_HIGHLIGHT("CURRENT INDEX: " + std::to_string(i) + "/" + std::to_string(nObjects));
 
             if (mustBeDelta) {
                 PRINT_ERROR("NEXT FILE MUST BE DELTA AND IS NOT!");
@@ -411,18 +487,18 @@ namespace VestPack {
 
             switch (objHeader.type) {
                 case VestTypes::COMMIT:
-                    PRINT_COMMIT("PROCESSING COMMIT");
-                    (void)processCommit(commitList, fContent, dir);
+                    // PRINT_COMMIT("PROCESSING COMMIT");
+                    (void)processCommit(commitList, packIndex, fContent, dir);
                     break;
 
                 case VestTypes::TREE:
                     PRINT_TREE("PROCESSING TREE");
-                    (void)processTree(tree, tree->getIndex(), fContent, dir, isHead);
+                    (void)processTree(commitList, tree, treeIdx, packIndex, fContent, dir, isHead);
                     break;
 
                 case VestTypes::BLOB:
-                    PRINT_BLOB("PROCESSING BLOB");
-                    (void)processBlob(tree->getIndex(), fContent, dir, lastBlob, isHead, mustBeDelta);
+                    // PRINT_BLOB("PROCESSING BLOB");
+                    (void)processBlob(tree, treeIdx, packIndex, fContent, dir, lastBlob, isHead, mustBeDelta);
                     break;
 
                 case VestTypes::OFS_DELTA:
@@ -433,8 +509,6 @@ namespace VestPack {
                     PRINT_ERROR("NOT VALID TYPE FOUND");
                     break;
             }
-
-            if (i == 10) break;
         }
 
     }

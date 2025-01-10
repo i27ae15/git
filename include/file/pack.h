@@ -48,31 +48,37 @@ namespace VestPack {
     );
 
     void processRefDelta(
+        VestObjects::Tree* treeClass,
         VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         size_t& offset,
         std::string& dir,
         std::string& baseBlob,
         std::vector<uint8_t>& rData,
-        bool& writeOnfile,
+        bool& writeOnFile,
         bool& checkDelta
     );
 
     void processCommit(
         VestObjects::CommitLinkedList* commitList,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir
     );
 
     void processTree(
         VestObjects::Tree* treeClass,
-        VestObjects::TreeNode* parent,
+        VestObjects::TreeNode*& parent,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
         bool& writeOnFile
     );
 
     void processBlob(
+        VestObjects::Tree* treeClass,
         VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
         std::string& lastBlob,

@@ -27,21 +27,10 @@ namespace VestFile {
     void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
         std::filesystem::path filePath = fPath;
         if (filePath.has_parent_path() && !std::filesystem::exists(filePath.parent_path())) {
-            PRINT_ERROR("PARENT DIRECTOY DOES NOT EXISTS: " + filePath.parent_path().string());
+            PRINT_ERROR("PARENT DIRECTORY DOES NOT EXISTS: " + filePath.parent_path().string());
         }
 
-        if (std::filesystem::exists(filePath)) {
-            if (std::filesystem::is_regular_file(filePath)) {
-                std::cout << filePath << " is a file.\n";
-            } else if (std::filesystem::is_directory(filePath)) {
-                std::cout << filePath << " is a directory.\n";
-                // PRINT_ERROR(absPath.string() + " IS A DIRECTORY");
-            } else {
-                std::cout << filePath << " is neither a regular file nor a directory.\n";
-            }
-        } else {
-            std::cout << "The path does not exist.\n";
-        }
+        if (std::filesystem::exists(filePath)) std::filesystem::remove(filePath); // There is some weird behavior on this
 
         // std::string p = filePath.parent_path().string();
         // PRINT_SUCCESS("PARENT FOLDER: " + p + " | FILE_NAME: " + filePath.filename().string());
@@ -51,12 +40,13 @@ namespace VestFile {
             PRINT_ERROR("FAILED TO OPEN " + fPath);
             throw std::runtime_error("");
         }
+        // PRINT_SUCCESS("PATH WRITTEN: " + filePath.string());
         outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
     }
 
-    VestTypes::CommitFile* readCommit(std::string& fContent) {
+    VestTypes::CommitFile* readCommit(std::string& fContent, bool fromPack) {
 
-        // std::cout << fContent << '\x0A';
+        std::cout << fContent << '\x0A';
 
         VestTypes::CommitFile* commit = new VestTypes::CommitFile();
         std::string* tps[5] = {
@@ -80,6 +70,28 @@ namespace VestFile {
                 *_using += fContent[i];
                 i++;
             }
+
+            if (fromPack) {
+
+                switch (toWrite) {
+                    case 0:
+                        if (_using->find("tree ") != std::string::npos) {
+                            *_using = _using->substr(5);
+                        }
+                        break;
+
+                    case 1:
+                        if (_using->find("parent") != std::string::npos) {
+                            *_using = _using->substr(7);
+                        }
+
+                    default:
+                        break;
+                }
+
+            }
+
+            PRINT_SUCCESS("TO WRITE: " + *_using);
 
             toWrite++;
         }
@@ -256,4 +268,5 @@ namespace VestFile {
     VestTypes::DecompressedData decompressData(std::vector<uint8_t>& compressedData) {
         return decompressData(compressedData, VestTypes::KB);
     }
+
 }

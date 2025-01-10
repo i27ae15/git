@@ -180,7 +180,7 @@ namespace Vest {
         std::string bUrl = argv[2];
         std::string dir = argv[3];
 
-        // bUrl = "https://github.com/codecrafters-io/git-sample-1";
+        bUrl = "https://github.com/codecrafters-io/git-sample-1";
         PRINT_HIGHLIGHT("USING : " + bUrl);
 
         if (dir[dir.size() - 1] != '/') dir += '/';
