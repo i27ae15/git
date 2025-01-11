@@ -25,12 +25,19 @@ namespace VestFile {
     }
 
     void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
-        std::filesystem::path filePath = fPath;
-        if (filePath.has_parent_path() && !std::filesystem::exists(filePath.parent_path())) {
-            PRINT_ERROR("PARENT DIRECTORY DOES NOT EXISTS: " + filePath.parent_path().string());
+        std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
+
+        if (absolutePath.has_parent_path() && !std::filesystem::exists(absolutePath.parent_path())) {
+            PRINT_ERROR("PARENT DIRECTORY DOES NOT EXISTS: " + absolutePath.parent_path().string());
         }
 
-        if (std::filesystem::exists(filePath)) std::filesystem::remove(filePath); // There is some weird behavior on this
+        if (std::filesystem::exists(absolutePath)) {
+
+            PRINT_WARNING("DELETING ON: " + absolutePath.string());
+            PRINT_HIGHLIGHT("IS DIRECTORY: " + std::to_string(std::filesystem::is_directory(absolutePath)));
+            std::filesystem::remove(absolutePath);
+
+        } // There is some weird behavior on this
 
         // std::string p = filePath.parent_path().string();
         // PRINT_SUCCESS("PARENT FOLDER: " + p + " | FILE_NAME: " + filePath.filename().string());
@@ -40,8 +47,11 @@ namespace VestFile {
             PRINT_ERROR("FAILED TO OPEN " + fPath);
             throw std::runtime_error("");
         }
-        // PRINT_SUCCESS("PATH WRITTEN: " + filePath.string());
+
+        PRINT_SUCCESS("ABSOLUTE PATH: " + absolutePath.string());
         outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
+        std::vector<uint8_t> fContent = VestFile::readFile(absolutePath.string());
+
     }
 
     VestTypes::CommitFile* readCommit(std::string& fContent, bool fromPack) {
@@ -171,14 +181,17 @@ namespace VestFile {
     }
 
     std::vector<unsigned char> readFile(std::string& fPath) {
-        std::ifstream file(fPath, std::ios::binary);
+        std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
+        std::ifstream file(absolutePath, std::ios::binary);
+
+        PRINT_SUCCESS("READING PATH: " + absolutePath.string());
 
         if (!file) {
-            PRINT_ERROR("FAILED TO OPEN FILE: " + fPath);
+            PRINT_ERROR("FAILED TO OPEN FILE: " + absolutePath.string());
             throw std::runtime_error("");
         }
 
-        std::vector<unsigned char> fileContent (
+        std::vector<uint8_t> fileContent (
             (std::istreambuf_iterator<char>(file)),
             std::istreambuf_iterator<char>()
         );
@@ -248,7 +261,7 @@ namespace VestFile {
                     stream.avail_out = uSize;
 
                     uSize *= 2;
-                    // PRINT_WARNING("ADDED MORE SPACE: " + std::to_string(uSize));
+                    PRINT_WARNING("ADDED MORE SPACE: " + std::to_string(uSize));
                 }
                 else {
                     inflateEnd(&stream);
@@ -266,7 +279,7 @@ namespace VestFile {
     }
 
     VestTypes::DecompressedData decompressData(std::vector<uint8_t>& compressedData) {
-        return decompressData(compressedData, VestTypes::KB);
+        return decompressData(compressedData, VestTypes::EXPAND_AS_NEEDED);
     }
 
 }

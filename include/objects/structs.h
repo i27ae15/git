@@ -33,6 +33,8 @@ namespace VestObjects {
 
         CommitNode* getCurrent();
 
+        bool isHead();
+
         void addNode(CommitNode* node);
         void addNode(VestTypes::CommitFile* commit);
         void incrementIndex();
@@ -118,6 +120,25 @@ namespace VestObjects {
         bool written;
         std::map<std::string, uint32_t> packIdx;
 
+
+    };
+
+
+    struct ObjectRead {
+
+        public:
+            ObjectRead();
+            ObjectRead(std::string fContent, uint8_t type);
+
+            bool setType(uint8_t t);
+
+            uint8_t getType();
+            std::string getStrType();
+            std::string fContent;
+
+        private:
+            bool validateType(uint8_t& t);
+            uint8_t type;
 
     };
 

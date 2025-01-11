@@ -180,9 +180,10 @@ namespace Vest {
         std::string bUrl = argv[2];
         std::string dir = argv[3];
 
+        // Error on git-sample-2
+
         bUrl = "https://github.com/codecrafters-io/git-sample-1";
         PRINT_HIGHLIGHT("USING : " + bUrl);
-
         if (dir[dir.size() - 1] != '/') dir += '/';
         if (VestObjects::initializeVest(dir) == EXIT_FAILURE) return EXIT_FAILURE;
 
@@ -205,6 +206,8 @@ namespace Vest {
         VestPack::processPack(rData, 12, dir);
 
         // PRINT_HIGHLIGHT("RAW: " + rData);
+        std::vector<uint8_t> fContent = VestFile::readFile("test_dir/scooby/dooby/doo");
+        std::cout << std::string(fContent.begin(), fContent.end());
 
         return EXIT_SUCCESS;
     }

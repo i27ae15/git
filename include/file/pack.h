@@ -48,12 +48,12 @@ namespace VestPack {
     );
 
     void processRefDelta(
-        VestObjects::Tree* treeClass,
+        VestObjects::CommitLinkedList* commitList,
+        VestObjects::Tree*& treeClass,
         VestObjects::TreeNode* parent,
         VestObjects::PackIndex& packIndex,
         size_t& offset,
         std::string& dir,
-        std::string& baseBlob,
         std::vector<uint8_t>& rData,
         bool& writeOnFile,
         bool& checkDelta
@@ -67,8 +67,9 @@ namespace VestPack {
     );
 
     void processTree(
-        VestObjects::Tree* treeClass,
-        VestObjects::TreeNode*& parent,
+        VestObjects::CommitLinkedList* commitList,
+        VestObjects::Tree*& treeClass,
+        VestObjects::TreeNode* parent,
         VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
@@ -81,7 +82,6 @@ namespace VestPack {
         VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
-        std::string& lastBlob,
         bool& writeOnFile,
         bool& checkDelta
     );

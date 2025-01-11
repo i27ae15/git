@@ -53,6 +53,8 @@ namespace VestObjects {
 
     CommitNode* CommitLinkedList::getCurrent() { return current; }
 
+    bool CommitLinkedList::isHead() { return current == head; }
+
     void CommitLinkedList::incrementIndex() {
 
         if (current->next == nullptr) {
@@ -172,7 +174,7 @@ namespace VestObjects {
             throw std::runtime_error("");
             return nullptr;
         }
-        PRINT_HIGHLIGHT("INDEX: " + std::to_string(index) + " : " + treeFile->tLines[index]->sha1());
+        // PRINT_HIGHLIGHT("INDEX: " + std::to_string(index) + " : " + treeFile->tLines[index]->sha1());
         return treeFile->tLines[index];
     }
 
@@ -249,5 +251,35 @@ namespace VestObjects {
         std::vector<uint8_t> compressedData = VestFile::compressData(fContent);
         VestFile::saveToFile(fPath, compressedData);
     }
+
+    /**
+     * ===================================================================
+     *                           STRUCTS
+     * ===================================================================
+    */
+
+    ObjectRead::ObjectRead() {}
+
+    ObjectRead::ObjectRead(std::string fContent, uint8_t type) : fContent{fContent}, type{} {
+        setType(type);
+    }
+
+    bool ObjectRead::setType(uint8_t t) {
+        if (!validateType(t)) {
+            PRINT_ERROR("INVALID TYPE; TYPE MUST BE BETWEEN 1 AND 8, SEE FILE/TYPES.H");
+            return false;
+        }
+
+        type = t;
+        return true;
+    }
+
+    bool ObjectRead::validateType(uint8_t& t) {
+        return (t >= 1 && 8 >= t);
+    }
+
+    uint8_t ObjectRead::getType() { return type; }
+
+    std::string ObjectRead::getStrType() { return type == VestTypes::TREE ? "tree" : "blob"; }
 
 }
