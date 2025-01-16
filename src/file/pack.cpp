@@ -193,7 +193,7 @@ namespace VestPack {
             offset++;
         }
 
-        PRINT_DELTA("SHA1_PARENT: " + refDeltaSha1);
+        // PRINT_DELTA("SHA1_PARENT: " + refDeltaSha1);
         VestObjects::ObjectRead objRead = VestObjects::readObject(refDeltaSha1, dir);
 
         std::string fContent {};
@@ -240,7 +240,6 @@ namespace VestPack {
                     break;
 
                 default:
-                    PRINT_WARNING("GETTING OUT");
                     inRef = false;
                     break;
             }
@@ -268,7 +267,7 @@ namespace VestPack {
             dataToComputeSha1, dir, sha1
         );
 
-        PRINT_DELTA("SHA1 WRITTEN: " + sha1);
+        // PRINT_DELTA("SHA1 WRITTEN: " + sha1);
 
         // Check if the sha1 is the same as the one we have on queue
         // The tree must be reset.
@@ -299,7 +298,7 @@ namespace VestPack {
         std::string sha1 = VestObjects::createCommit(fContent, dir);
         packIndex.addSha1(sha1);
 
-        PRINT_COMMIT("COMMIT SHA1 WRITTEN: " + sha1);
+        // PRINT_COMMIT("COMMIT SHA1 WRITTEN: " + sha1);
     }
 
     void processTree(
@@ -320,12 +319,12 @@ namespace VestPack {
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
         packIndex.addSha1(sha1);
 
-        PRINT_SML_SEPARATION;
-        for (VestTypes::TreeFileLine* t : treeFile->tLines) {
-            PRINT_TREE("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
-        }
-        PRINT_TREE("TREE SHA1: " + sha1 + " | SIZE: " + std::to_string(treeFile->tLines.size()));
-        PRINT_SML_SEPARATION;
+        // PRINT_SML_SEPARATION;
+        // for (VestTypes::TreeFileLine* t : treeFile->tLines) {
+        //     PRINT_TREE("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
+        // }
+        // PRINT_TREE("TREE SHA1: " + sha1 + " | SIZE: " + std::to_string(treeFile->tLines.size()));
+        // PRINT_SML_SEPARATION;
 
         if (commitList->getCurrent()->commit->tSha1 == sha1) {
             // We gotta reset the tree
@@ -351,12 +350,12 @@ namespace VestPack {
 
 
             if (!packIndex.exists(treeLine->sha1())) {
-                PRINT_ERROR("TREE: NOT CURRENT SHA1: " + treeLine->sha1());
+                // PRINT_ERROR("TREE: NOT CURRENT SHA1: " + treeLine->sha1());
                 throw std::runtime_error("");
             }
 
             // Modify this to add a better sha1 handleing
-            PRINT_SUCCESS("TREE: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
+            // PRINT_SUCCESS("TREE: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
             reRun = true;
         }
 
@@ -366,7 +365,6 @@ namespace VestPack {
 
             if (parent->isCompleted()) {
                 if (parent->parent->isCompleted()) {
-                    PRINT_SUCCESS("YUP ON TREE");
                     treeClass->setIndex(parent->parent->parent);
                 } else {
                     treeClass->setIndex(parent->parent);
@@ -378,7 +376,6 @@ namespace VestPack {
 
 
         // We have to check the parent at this point, and mark that line as read
-        PRINT_HIGHLIGHT("BEFORE CURRENT NODE");
         VestObjects::TreeNode* currentNode = new VestObjects::TreeNode(treeFile, treeLine->fName, parent);
         parent->addChild(currentNode);
 
@@ -390,10 +387,17 @@ namespace VestPack {
         // Otherwise we should only return
         if (!writeOnFile) return;
 
-        std::string path = currentNode->getPath();
-        PRINT_TREE("TREE TO WRITE PATH: " + path);
+        std::filesystem::path absPath = std::filesystem::absolute(currentNode->getPath());
+        std::string path = absPath.string();
 
-        if (!std::filesystem::exists(path)) std::filesystem::create_directory(path);
+        bool isEmpty = true;
+
+        if (std::filesystem::exists(path)) {
+            isEmpty = std::filesystem::remove(path);
+        }
+        if (isEmpty) std::filesystem::create_directory(absPath);
+
+        std::vector<std::string> entries {};
 
         // PRINT_TREE("TREE WRITTEN: " + sha1);
         // PRINT_SML_SEPARATION;
@@ -422,13 +426,13 @@ namespace VestPack {
         if (sha1 != treeLine->sha1()) {
 
             if (!packIndex.exists(treeLine->sha1())) {
-                PRINT_ERROR("BLOB: NOT CURRENT SHA1: " + treeLine->sha1() + " | AND BLOB: " + sha1);
+                // PRINT_ERROR("BLOB: NOT CURRENT SHA1: " + treeLine->sha1() + " | AND BLOB: " + sha1);
                 checkDelta = true;
                 return;
             }
 
             // Modify this to add a better sha1 handleing
-            PRINT_SUCCESS("BLOB: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
+            // PRINT_SUCCESS("BLOB: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
             std::string path = parent->getPath() + treeLine->fName;
 
             std::string fContent = treeLine->sha1();
@@ -444,11 +448,11 @@ namespace VestPack {
 
         packIndex.addSha1(sha1);
 
-        PRINT_SML_SEPARATION;
+        // PRINT_SML_SEPARATION;
         if (parent->isCompleted()) {
-            PRINT_BLOB("BLOB_COMPLETED: " + parent->parent->getPreviousLine()->sha1());
+            // PRINT_BLOB("BLOB_COMPLETED: " + parent->parent->getPreviousLine()->sha1());
             if (parent->parent->isCompleted()) {
-                PRINT_SUCCESS("YUP");
+                // PRINT_SUCCESS("YUP");
                 treeClass->setIndex(parent->parent->parent);
             } else {
                 treeClass->setIndex(parent->parent);
@@ -506,7 +510,7 @@ namespace VestPack {
                     break;
 
                 case VestTypes::TREE:
-                    PRINT_TREE("PROCESSING TREE");
+                    // PRINT_TREE("PROCESSING TREE");
                     (void)processTree(commitList, tree, treeIdx, packIndex, fContent, dir, isHead);
                     break;
 

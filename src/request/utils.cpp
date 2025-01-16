@@ -35,7 +35,6 @@ namespace VestRequest {
         PRINT_WARNING(rManager.getSReturnData());
 
         rSha1 = rManager.getSReturnData().substr(38, 40);
-        // PRINT_HIGHLIGHT(rSha1);
 
         return EXIT_SUCCESS;
     }

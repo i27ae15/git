@@ -61,8 +61,6 @@ namespace Vest {
 
     uint8_t CommandManager::actionForCatFile(int argc, char* argv[]) {
 
-        PRINT_HIGHLIGHT("CAT FILE");
-
         std::string parameter = argv[2];
         std::string fileID = argv[3];
         std::string fPath {VestFileUtils::constructfPath(fileID)};
@@ -182,8 +180,9 @@ namespace Vest {
 
         // Error on git-sample-2
 
-        bUrl = "https://github.com/codecrafters-io/git-sample-1";
+        // bUrl = "https://github.com/codecrafters-io/git-sample-1";
         PRINT_HIGHLIGHT("USING : " + bUrl);
+
         if (dir[dir.size() - 1] != '/') dir += '/';
         if (VestObjects::initializeVest(dir) == EXIT_FAILURE) return EXIT_FAILURE;
 
@@ -201,13 +200,7 @@ namespace Vest {
             wSha1
         );
 
-        PRINT_HIGHLIGHT(dir);
-
         VestPack::processPack(rData, 12, dir);
-
-        // PRINT_HIGHLIGHT("RAW: " + rData);
-        std::vector<uint8_t> fContent = VestFile::readFile("test_dir/scooby/dooby/doo");
-        std::cout << std::string(fContent.begin(), fContent.end());
 
         return EXIT_SUCCESS;
     }

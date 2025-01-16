@@ -2,9 +2,12 @@
 #define VEST_FILE_UTILS_H
 
 #include <string>
+#include <vector>
 #include <file/types.h>
 
 namespace VestFileUtils {
+
+    std::vector<std::string> listSubEntries(std::vector<std::string>& entries, std::string rootPath);
 
     std::string byteToHex(uint8_t byte);
     std::string byteToBinary(uint8_t byte);

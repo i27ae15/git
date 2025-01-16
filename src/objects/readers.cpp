@@ -28,7 +28,6 @@ namespace VestObjects {
         objRead.fContent = std::string(dData.data.begin(), dData.data.end());
 
         std::string type = objRead.fContent.substr(0, objRead.fContent.find(' '));
-        PRINT_HIGHLIGHT("FILE_TYPE: " + type);
         objRead.fContent = objRead.fContent.substr(objRead.fContent.find('\x00') + 1);
 
         // Determine and return the file type

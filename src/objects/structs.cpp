@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <algorithm>
 
 #include <file/types.h>
 #include <file/file.h>
@@ -162,6 +163,7 @@ namespace VestObjects {
             currentNode = currentNode->parent;
         }
 
+        path.erase(std::remove(path.begin(), path.end(), '\0'), path.end());
         return path;
     }
 

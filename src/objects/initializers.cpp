@@ -88,7 +88,6 @@ namespace VestObjects {
 
             if (entry.is_directory()) {
                 std::filesystem::path p {entry.path()};
-                std::cerr << "NEXT_PATH: " + p.string() << '\x0A';
                 cSha1 = createTree(p);
                 fType = VestTypes::TREE_F;
             }
@@ -106,8 +105,6 @@ namespace VestObjects {
             + 1;                         // space separator
 
         }
-
-        cSize--; // I don't know why I have to do this.
 
         std::string fContent = "tree " + std::to_string(cSize) + '\x00';
         for (std::map<std::string, std::string>::iterator it {objs.begin()}; it != objs.end(); ++it) {

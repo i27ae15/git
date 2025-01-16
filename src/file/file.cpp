@@ -12,6 +12,7 @@
 #include <file/file.h>
 #include <file/types.h>
 #include <file/pack.h>
+#include <file/utils.h>
 
 
 namespace VestFile {
@@ -25,38 +26,29 @@ namespace VestFile {
     }
 
     void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
-        std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
 
+        std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
         if (absolutePath.has_parent_path() && !std::filesystem::exists(absolutePath.parent_path())) {
             PRINT_ERROR("PARENT DIRECTORY DOES NOT EXISTS: " + absolutePath.parent_path().string());
         }
 
-        if (std::filesystem::exists(absolutePath)) {
-
-            PRINT_WARNING("DELETING ON: " + absolutePath.string());
-            PRINT_HIGHLIGHT("IS DIRECTORY: " + std::to_string(std::filesystem::is_directory(absolutePath)));
-            std::filesystem::remove(absolutePath);
-
-        } // There is some weird behavior on this
+        // if (std::filesystem::is_directory(absolutePath)) PRINT_HIGHLIGHT("PATH IS A DIRECTORY: " + absolutePath.string());
 
         // std::string p = filePath.parent_path().string();
         // PRINT_SUCCESS("PARENT FOLDER: " + p + " | FILE_NAME: " + filePath.filename().string());
 
-        std::ofstream outFile(fPath, std::ios::binary);
+        std::ofstream outFile(absolutePath, std::ios::binary);
+        outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
+
         if (!outFile) {
-            PRINT_ERROR("FAILED TO OPEN " + fPath);
+            PRINT_ERROR("FAILED TO OPEN " + absolutePath.string());
             throw std::runtime_error("");
         }
 
-        PRINT_SUCCESS("ABSOLUTE PATH: " + absolutePath.string());
-        outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
         std::vector<uint8_t> fContent = VestFile::readFile(absolutePath.string());
-
     }
 
     VestTypes::CommitFile* readCommit(std::string& fContent, bool fromPack) {
-
-        std::cout << fContent << '\x0A';
 
         VestTypes::CommitFile* commit = new VestTypes::CommitFile();
         std::string* tps[5] = {
@@ -100,8 +92,6 @@ namespace VestFile {
                 }
 
             }
-
-            PRINT_SUCCESS("TO WRITE: " + *_using);
 
             toWrite++;
         }
@@ -150,8 +140,6 @@ namespace VestFile {
             throw std::runtime_error("Failed to open file: " + fPath);
         }
 
-        PRINT_HIGHLIGHT("F_PATH: " + fPath);
-
         // Read a portion of the file for decompression (e.g., 30 bytes)
         std::vector<uint8_t> compressedData(
             (std::istreambuf_iterator<char>(file)),
@@ -167,7 +155,6 @@ namespace VestFile {
 
         // Get the type (e.g., "tree", "blob")
         std::string type = decompressedHeader.substr(0, decompressedHeader.find(' '));
-        PRINT_HIGHLIGHT("FILE_TYPE: " + type);
 
         // Determine and return the file type
         if (type == "tree") return VestTypes::TREE;
@@ -183,8 +170,6 @@ namespace VestFile {
     std::vector<unsigned char> readFile(std::string& fPath) {
         std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
         std::ifstream file(absolutePath, std::ios::binary);
-
-        PRINT_SUCCESS("READING PATH: " + absolutePath.string());
 
         if (!file) {
             PRINT_ERROR("FAILED TO OPEN FILE: " + absolutePath.string());
@@ -261,7 +246,7 @@ namespace VestFile {
                     stream.avail_out = uSize;
 
                     uSize *= 2;
-                    PRINT_WARNING("ADDED MORE SPACE: " + std::to_string(uSize));
+                    // PRINT_WARNING("ADDED MORE SPACE: " + std::to_string(uSize));
                 }
                 else {
                     inflateEnd(&stream);
