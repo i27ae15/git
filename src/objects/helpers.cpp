@@ -13,10 +13,11 @@ namespace VestObjects {
         return path;
     }
 
-    std::string writeObject(std::string& fContent, std::string dirRoot) {
+    std::string writeObject(std::string& fContent, std::string dirRoot, std::string sha1) {
         // PRINT_HIGHLIGHT(std::to_string(fContent.size()));
         std::vector<unsigned char> compressedContent = VestFile::compressData(fContent);
-        std::string sha1 = VestFileUtils::computeSHA1(fContent);
+
+        if (sha1.empty()) sha1 = VestFileUtils::computeSHA1(fContent);
 
         std::ostringstream pathToSaveFile {};
         pathToSaveFile << dirRoot + ".git/objects/" << sha1[0] << sha1[1];
@@ -29,8 +30,8 @@ namespace VestObjects {
         return sha1;
     }
 
-    std::string writeObject(std::string&& fContent, std::string dirRoot) {
-        return writeObject(fContent, dirRoot);
+    std::string writeObject(std::string&& fContent, std::string dirRoot, std::string sha1) {
+        return writeObject(fContent, dirRoot, sha1);
     }
 
     std::string prepareBlob(std::vector<unsigned char>& fContent) {

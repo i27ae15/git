@@ -54,5 +54,8 @@
         "cinttypes": "cpp",
         "cstring": "cpp",
         "map": "cpp"
-    }
+    },
+    "cSpell.words": [
+        "constructf"
+    ]
 }

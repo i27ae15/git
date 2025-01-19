@@ -12,6 +12,7 @@
 #include <file/file.h>
 #include <file/types.h>
 #include <file/pack.h>
+#include <file/utils.h>
 
 
 namespace VestFile {
@@ -25,15 +26,29 @@ namespace VestFile {
     }
 
     void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
-        std::ofstream outFile(fPath, std::ios::binary);
 
-        if (!outFile) throw std::runtime_error("FAILED TO OPEN " + fPath);
+        std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
+        if (absolutePath.has_parent_path() && !std::filesystem::exists(absolutePath.parent_path())) {
+            PRINT_ERROR("PARENT DIRECTORY DOES NOT EXISTS: " + absolutePath.parent_path().string());
+        }
+
+        // if (std::filesystem::is_directory(absolutePath)) PRINT_HIGHLIGHT("PATH IS A DIRECTORY: " + absolutePath.string());
+
+        // std::string p = filePath.parent_path().string();
+        // PRINT_SUCCESS("PARENT FOLDER: " + p + " | FILE_NAME: " + filePath.filename().string());
+
+        std::ofstream outFile(absolutePath, std::ios::binary);
         outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
+
+        if (!outFile) {
+            PRINT_ERROR("FAILED TO OPEN " + absolutePath.string());
+            throw std::runtime_error("");
+        }
+
+        std::vector<uint8_t> fContent = VestFile::readFile(absolutePath.string());
     }
 
-    VestTypes::CommitFile* readCommit(std::string& fContent) {
-
-        // std::cout << fContent << '\x0A';
+    VestTypes::CommitFile* readCommit(std::string& fContent, bool fromPack) {
 
         VestTypes::CommitFile* commit = new VestTypes::CommitFile();
         std::string* tps[5] = {
@@ -56,6 +71,26 @@ namespace VestFile {
             while (fContent[i] != '\x0A') {
                 *_using += fContent[i];
                 i++;
+            }
+
+            if (fromPack) {
+
+                switch (toWrite) {
+                    case 0:
+                        if (_using->find("tree ") != std::string::npos) {
+                            *_using = _using->substr(5);
+                        }
+                        break;
+
+                    case 1:
+                        if (_using->find("parent") != std::string::npos) {
+                            *_using = _using->substr(7);
+                        }
+
+                    default:
+                        break;
+                }
+
             }
 
             toWrite++;
@@ -105,8 +140,6 @@ namespace VestFile {
             throw std::runtime_error("Failed to open file: " + fPath);
         }
 
-        PRINT_HIGHLIGHT("F_PATH: " + fPath);
-
         // Read a portion of the file for decompression (e.g., 30 bytes)
         std::vector<uint8_t> compressedData(
             (std::istreambuf_iterator<char>(file)),
@@ -122,7 +155,6 @@ namespace VestFile {
 
         // Get the type (e.g., "tree", "blob")
         std::string type = decompressedHeader.substr(0, decompressedHeader.find(' '));
-        PRINT_HIGHLIGHT("FILE_TYPE: " + type);
 
         // Determine and return the file type
         if (type == "tree") return VestTypes::TREE;
@@ -136,14 +168,15 @@ namespace VestFile {
     }
 
     std::vector<unsigned char> readFile(std::string& fPath) {
-        std::ifstream file(fPath, std::ios::binary);
+        std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
+        std::ifstream file(absolutePath, std::ios::binary);
 
         if (!file) {
-            PRINT_ERROR("FAILED TO OPEN FILE: " + fPath);
+            PRINT_ERROR("FAILED TO OPEN FILE: " + absolutePath.string());
             throw std::runtime_error("");
         }
 
-        std::vector<unsigned char> fileContent (
+        std::vector<uint8_t> fileContent (
             (std::istreambuf_iterator<char>(file)),
             std::istreambuf_iterator<char>()
         );
@@ -231,6 +264,7 @@ namespace VestFile {
     }
 
     VestTypes::DecompressedData decompressData(std::vector<uint8_t>& compressedData) {
-        return decompressData(compressedData, VestTypes::KB);
+        return decompressData(compressedData, VestTypes::EXPAND_AS_NEEDED);
     }
+
 }

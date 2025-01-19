@@ -2,6 +2,8 @@
 #include <iostream>
 #include <openssl/sha.h>
 
+#include <utils.h>
+
 #include <file/types.h>
 #include <file/utils.h>
 
@@ -73,4 +75,23 @@ namespace VestFileUtils {
 
         return fPath.str();
     }
+
+    std::vector<std::string> listSubEntries(std::vector<std::string>& entries, std::string rootPath) {
+        std::filesystem::path absPath = std::filesystem::absolute(rootPath);
+
+        for (const auto& entry : std::filesystem::directory_iterator(absPath)) {
+
+            std::string str = entry.path().string();
+
+            if (entry.path().filename().string() == ".git") continue;
+            entries.push_back(str);
+
+            if (std::filesystem::is_directory(entry)) listSubEntries(entries, str);
+        }
+
+        if (entries.empty()) PRINT_WARNING("ROOT_PATH: " + absPath.string() + " IS EMTPY");
+
+        return entries;
+    }
+
 }

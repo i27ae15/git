@@ -29,7 +29,7 @@ namespace VestRequest {
     void RequestManager::freeUrl() {
         if (url == nullptr) return;
 
-        delete [] url;
+        // delete [] url;
         url = nullptr;
     }
 

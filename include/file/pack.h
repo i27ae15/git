@@ -37,42 +37,53 @@ namespace VestPack {
     void copyDelta(
         std::string& baseBlob,
         std::string& objBlob,
-        std::vector<uint8_t>& rData,
+        std::string& rData,
         size_t& offset
     );
 
     void addDelta(
         std::string& blob,
-        std::vector<uint8_t>& rData,
+        std::string& rData,
         size_t& offset
     );
 
     void processRefDelta(
+        VestObjects::CommitLinkedList* commitList,
+        VestObjects::Tree*& treeClass,
+        VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         size_t& offset,
-        std::string& baseBlob,
-        std::vector<uint8_t>& rData
+        std::string& dir,
+        std::vector<uint8_t>& rData,
+        bool& writeOnFile,
+        bool& checkDelta
     );
 
     void processCommit(
         VestObjects::CommitLinkedList* commitList,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir
     );
 
     void processTree(
-        VestObjects::Tree* treeClass,
+        VestObjects::CommitLinkedList* commitList,
+        VestObjects::Tree*& treeClass,
         VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
         bool& writeOnFile
     );
 
     void processBlob(
+        VestObjects::Tree* treeClass,
         VestObjects::TreeNode* parent,
+        VestObjects::PackIndex& packIndex,
         std::string& fContent,
         std::string& dir,
-        std::string& lastBlob,
-        bool& writeOnFile
+        bool& writeOnFile,
+        bool& checkDelta
     );
 
     void processPack(
