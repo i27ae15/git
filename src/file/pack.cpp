@@ -298,7 +298,7 @@ namespace VestPack {
         std::string sha1 = VestObjects::createCommit(fContent, dir);
         packIndex.addSha1(sha1);
 
-        // PRINT_COMMIT("COMMIT SHA1 WRITTEN: " + sha1);
+        PRINT_COMMIT("COMMIT SHA1 WRITTEN: " + sha1);
     }
 
     void processTree(
@@ -319,57 +319,60 @@ namespace VestPack {
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
         packIndex.addSha1(sha1);
 
-        // PRINT_SML_SEPARATION;
-        // for (VestTypes::TreeFileLine* t : treeFile->tLines) {
-        //     PRINT_TREE("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
-        // }
-        // PRINT_TREE("TREE SHA1: " + sha1 + " | SIZE: " + std::to_string(treeFile->tLines.size()));
-        // PRINT_SML_SEPARATION;
+        PRINT_SML_SEPARATION;
+        for (VestTypes::TreeFileLine* t : treeFile->tLines) {
+            PRINT_TREE("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
+        }
+        PRINT_TREE("TREE SHA1: " + sha1 + " | SIZE: " + std::to_string(treeFile->tLines.size()));
+        PRINT_SML_SEPARATION;
 
-        if (commitList->getCurrent()->commit->tSha1 == sha1) {
-            // We gotta reset the tree
-            // PRINT_HIGHLIGHT("RESET TREE");
-            delete treeClass;
-            if (!commitList->isHead()) {
-                PRINT_WARNING("CHANGING WRITING");
-                writeOnFile = false;
-            }
+        PRINT_COMMIT("SHA1 : " + commitList->getCurrent()->commit->tSha1 + " | " + sha1);
 
-            treeClass = new VestObjects::Tree();
-            commitList->incrementIndex();
+        if (commitList->getCurrent()->commit->tSha1 == sha1 || parent == nullptr) {
+
+            if (commitList->getCurrent()->commit->tSha1 == sha1) {
+
+                // We gotta reset the tree
+                PRINT_HIGHLIGHT("RESET TREE");
+                delete treeClass;
+                if (!commitList->isHead()) {
+                    PRINT_WARNING("CHANGING WRITING");
+                    writeOnFile = false;
+                }
+
+                treeClass = new VestObjects::Tree();
+                commitList->incrementIndex();
+
+            } else if (parent == nullptr) return;
         }
 
+        PRINT_HIGHLIGHT("CHECKING IF ROOT");
         if (treeClass->getRoot() == nullptr) {
             treeClass->setRoot(treeFile, dir);
             return;
         }
 
+        PRINT_HIGHLIGHT("GETTING THE CURRENT LINE");
         bool reRun {};
         VestTypes::TreeFileLine* treeLine = parent->getCurrentLine();
         if (sha1 != treeLine->sha1()) {
 
-
             if (!packIndex.exists(treeLine->sha1())) {
-                // PRINT_ERROR("TREE: NOT CURRENT SHA1: " + treeLine->sha1());
+                PRINT_ERROR("TREE: NOT CURRENT SHA1: " + treeLine->sha1());
                 throw std::runtime_error("");
             }
 
             // Modify this to add a better sha1 handleing
-            // PRINT_SUCCESS("TREE: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
+            PRINT_SUCCESS("TREE: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
             reRun = true;
         }
 
+        PRINT_HIGHLIGHT("INCREMENTING INDEX");
         parent->incrementIndex();
+        if (parent->isCompleted()) VestObjects::Tree::calculateAndSetIndex(treeClass, parent);
 
         if (reRun) {
-
-            if (parent->isCompleted()) {
-                if (parent->parent->isCompleted()) {
-                    treeClass->setIndex(parent->parent->parent);
-                } else {
-                    treeClass->setIndex(parent->parent);
-                }
-            };
+            PRINT_TREE("RE-RUNNING");
             processTree(commitList, treeClass, treeClass->getIndex(), packIndex, fContent, dir, writeOnFile);
             return;
         }
@@ -449,15 +452,7 @@ namespace VestPack {
         packIndex.addSha1(sha1);
 
         // PRINT_SML_SEPARATION;
-        if (parent->isCompleted()) {
-            // PRINT_BLOB("BLOB_COMPLETED: " + parent->parent->getPreviousLine()->sha1());
-            if (parent->parent->isCompleted()) {
-                // PRINT_SUCCESS("YUP");
-                treeClass->setIndex(parent->parent->parent);
-            } else {
-                treeClass->setIndex(parent->parent);
-            }
-        }
+        if (parent->isCompleted()) VestObjects::Tree::calculateAndSetIndex(treeClass, parent);
 
         if (!writeOnFile) return;
         PRINT_BLOB("BLOB WRITTEN: " + sha1);
@@ -502,6 +497,8 @@ namespace VestPack {
 
             std::string fContent {};
             (void)setFileContent(_offset, rData, _offset, fContent);
+
+            PRINT_SUCCESS("TYPE: " + std::to_string(objHeader.type));
 
             switch (objHeader.type) {
                 case VestTypes::COMMIT:

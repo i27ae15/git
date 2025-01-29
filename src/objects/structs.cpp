@@ -168,6 +168,7 @@ namespace VestObjects {
     }
 
     VestTypes::TreeFileLine* TreeNode::getCurrentLine() {
+        PRINT_SUCCESS("CURRENT SIZE: " + std::to_string(treeFile->tLines.size()));
         if (index >= treeFile->tLines.size()) {
             PRINT_ERROR(
                 "INDEX OUT OF RANGE | INDEX: " + std::to_string(index)
@@ -208,6 +209,14 @@ namespace VestObjects {
             folderName = folderName.substr(0, folderName.size() - 1);
         }
         setRoot(new TreeNode(treeFile, folderName));
+    }
+
+    void Tree::calculateAndSetIndex(Tree* treeCls, TreeNode* node) {
+        if (node == nullptr || !node->isCompleted()) {
+            treeCls->setIndex(node);
+            return;
+        }
+        calculateAndSetIndex(treeCls, node->parent);
     }
 
 

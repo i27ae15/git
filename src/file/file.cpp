@@ -50,6 +50,8 @@ namespace VestFile {
 
     VestTypes::CommitFile* readCommit(std::string& fContent, bool fromPack) {
 
+        std::cout << fContent << "\x0A";
+
         VestTypes::CommitFile* commit = new VestTypes::CommitFile();
         std::string* tps[5] = {
             &commit->tSha1,
