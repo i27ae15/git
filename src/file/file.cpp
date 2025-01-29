@@ -9,10 +9,11 @@
 #include <zlib.h>
 
 #include <utils.h>
+
 #include <file/file.h>
 #include <file/types.h>
-#include <file/pack.h>
 #include <file/utils.h>
+#include <file/pack/pack.h>
 
 
 namespace VestFile {
