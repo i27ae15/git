@@ -47,12 +47,9 @@ namespace VestPack {
             VestObjects::TreeNode* treeIdx = tree->getIndex();
 
             if (objHeader.type == VestTypes::REF_DELTA) {
-                PRINT_DELTA("PROCESSING REF_DELTA");
                 (void)processRefDelta(commitList, tree, treeIdx, packIndex, _offset, dir, rData, isHead, mustBeDelta);
                 continue;
             }
-
-            PRINT_HIGHLIGHT("CURRENT INDEX: " + std::to_string(i) + "/" + std::to_string(nObjects));
 
             if (mustBeDelta) {
                 PRINT_ERROR("NEXT FILE MUST BE DELTA AND IS NOT!");
@@ -61,8 +58,6 @@ namespace VestPack {
 
             std::string fContent {};
             (void)setFileContent(_offset, rData, _offset, fContent);
-
-            PRINT_SUCCESS("TYPE: " + std::to_string(objHeader.type));
 
             switch (objHeader.type) {
                 case VestTypes::COMMIT:

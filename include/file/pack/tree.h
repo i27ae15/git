@@ -9,6 +9,9 @@
 
 
 namespace VestPack {
+
+    void printTree(VestTypes::TreeFile* treeFile);
+
     void processTree(
         VestObjects::CommitLinkedList* commitList,
         VestObjects::Tree*& treeClass,

@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <utils.h>
+
 #include <file/types.h>
 #include <file/utils.h>
 
@@ -49,5 +51,28 @@ namespace VestTypes {
         std::cout << '\x0A';
         std::cout << commitMsg << '\x0A';
         std::cout << '\x0A';
+    }
+
+    void TreeFile::printTree() {
+
+        PRINT_SML_SEPARATION;
+        for (VestTypes::TreeFileLine* t : tLines) {
+            PRINT_TREE("TYPE: " + std::to_string(t->fType) + " NAME: " + t->fName + " SHA1: " + t->sha1());
+        }
+        PRINT_TREE("TREE SHA1: " + sha1 + " | SIZE: " + std::to_string(tLines.size()));
+        PRINT_SML_SEPARATION;
+
+    }
+
+    std::string headerTypeToString(HeaderType objType) {
+        std::string value {};
+
+        switch (objType) {
+            case HeaderType::BLOB:   value = "blob";   break;
+            case HeaderType::TREE:   value = "tree";   break;
+            case HeaderType::COMMIT: value = "commit"; break;
+        }
+
+        return value;
     }
 }

@@ -22,10 +22,7 @@ namespace VestPack {
         bool& checkDelta
     ) {
 
-        std::string fileToWrite = "blob " + std::to_string(fContent.size()) + '\x00';
-        fileToWrite += fContent;
-
-        std::vector<uint8_t> vContent {};
+        std::string fileToWrite = VestObjects::prepareBlob(fContent);
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
 
         VestTypes::TreeFileLine* treeLine = parent->getCurrentLine();
@@ -59,7 +56,6 @@ namespace VestPack {
         if (parent->isCompleted()) VestObjects::Tree::calculateAndSetIndex(treeClass, parent);
 
         if (!writeOnFile) return;
-        PRINT_BLOB("BLOB WRITTEN: " + sha1);
         std::string path = parent->getPath() + treeLine->fName;
         VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
     }

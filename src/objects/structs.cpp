@@ -139,14 +139,7 @@ namespace VestObjects {
             index++;
         }
 
-        if (index == treeFile->tLines.size()) {
-            if (parent != nullptr) {
-                PRINT_WARNING("CURRENT TREE NODE COMPLETED: " + parent->getPreviousLine()->sha1());
-            } else {
-                PRINT_WARNING("ROOT COMPLETED");
-            }
-            completed = true;
-        }
+        if (index == treeFile->tLines.size()) completed = true;
     };
 
     bool TreeNode::isCompleted() {return completed;}
@@ -168,7 +161,6 @@ namespace VestObjects {
     }
 
     VestTypes::TreeFileLine* TreeNode::getCurrentLine() {
-        PRINT_SUCCESS("CURRENT SIZE: " + std::to_string(treeFile->tLines.size()));
         if (index >= treeFile->tLines.size()) {
             PRINT_ERROR(
                 "INDEX OUT OF RANGE | INDEX: " + std::to_string(index)

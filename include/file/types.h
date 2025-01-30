@@ -11,6 +11,12 @@
 
 namespace VestTypes {
 
+    constexpr const char* BLOB_STR = "blob";
+    constexpr const char* TREE_STR = "tree";
+    constexpr const char* COMMIT_STR = "commit";
+    constexpr const char* BLOB_FILE_STR = "100644";
+    constexpr const char* TREE_FILE_STR = "40000";
+
     constexpr const uint8_t COMMIT = 1;
     constexpr const uint8_t TREE = 2;
     constexpr const uint8_t BLOB = 3;
@@ -18,14 +24,17 @@ namespace VestTypes {
     constexpr const uint8_t OFS_DELTA = 6;
     constexpr const uint8_t REF_DELTA = 7;
 
-    constexpr const char* BLOB_FILE_STR = "100644";
-    constexpr const char* TREE_FILE_STR = "40000";
-
     constexpr const uint16_t KB = 1024;
     constexpr const uint32_t MB = KB * KB;
     constexpr const uint8_t SHA_BYTES_SIZE = 20;
 
     constexpr const uint8_t EXPAND_AS_NEEDED = 0;
+
+    enum class HeaderType {
+        BLOB,
+        TREE,
+        COMMIT
+    };
 
     struct FileType {
         const char* mode;
@@ -59,7 +68,9 @@ namespace VestTypes {
 
     struct TreeFile {
         std::vector<TreeFileLine*> tLines;
+        std::string sha1;
 
+        void printTree();
         void addLine(uint8_t fType, std::string fName, std::string bSha1);
         void addLine(std::string fType, std::string fName, std::string bSha1);
     };
@@ -73,6 +84,8 @@ namespace VestTypes {
 
         void printCommitFile();
     };
+
+    std::string headerTypeToString(HeaderType objType);
 }
 
 #endif // VEST_TYPE_H

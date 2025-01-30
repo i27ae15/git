@@ -34,17 +34,25 @@ namespace VestObjects {
         return writeObject(fContent, dirRoot, sha1);
     }
 
+    std::string prepareObjectHeader(std::string& fContent, VestTypes::HeaderType objType) {
+        std::string headerType = VestTypes::headerTypeToString(objType);
+
+        std::string header = headerType + " " + std::to_string(fContent.size()) + '\x00';
+        return header + fContent;
+
+    }
+
+    std::string prepareBlob(std::string& fContent) { return prepareObjectHeader(fContent, VestTypes::HeaderType::BLOB); }
+    std::string prepareTree(std::string& fContent) { return prepareObjectHeader(fContent, VestTypes::HeaderType::TREE); }
+    std::string prepareCommit(std::string& fContent) { return prepareObjectHeader(fContent, VestTypes::HeaderType::COMMIT); }
+
     std::string prepareBlob(std::vector<unsigned char>& fContent) {
-        // Allocate a vector to hold the header and file content
         std::string header = "blob " + std::to_string(fContent.size()) + '\x00';
         header.append(fContent.begin(), fContent.end());
         return header;
     }
 
-    std::string prepareCommit(std::string& fContent) {
-        std::string header = "commit " + std::to_string(fContent.size()) + '\x00';
-        header.append(fContent.begin(), fContent.end());
-        return header;
-    }
+
+
 
 }
