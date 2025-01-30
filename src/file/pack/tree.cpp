@@ -64,7 +64,6 @@ namespace VestPack {
             return;
         }
 
-
         // We have to check the parent at this point, and mark that line as read
         VestObjects::TreeNode* currentNode = new VestObjects::TreeNode(treeFile, treeLine->fName, parent);
         (void)parent->addChild(currentNode);
