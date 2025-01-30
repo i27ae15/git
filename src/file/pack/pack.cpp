@@ -61,17 +61,14 @@ namespace VestPack {
 
             switch (objHeader.type) {
                 case VestTypes::COMMIT:
-                    // PRINT_COMMIT("PROCESSING COMMIT");
                     (void)processCommit(commitList, packIndex, fContent, dir);
                     break;
 
                 case VestTypes::TREE:
-                    // PRINT_TREE("PROCESSING TREE");
                     (void)processTree(commitList, tree, treeIdx, packIndex, fContent, dir, isHead);
                     break;
 
                 case VestTypes::BLOB:
-                    // PRINT_BLOB("PROCESSING BLOB");
                     (void)processBlob(tree, treeIdx, packIndex, fContent, dir, isHead, mustBeDelta);
                     break;
 

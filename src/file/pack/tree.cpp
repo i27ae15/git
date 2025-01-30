@@ -5,6 +5,7 @@
 
 #include <objects/helpers.h>
 #include <objects/structs.h>
+#include <objects/readers.h>
 
 #include <file/file.h>
 #include <file/pack/tree.h>
@@ -22,7 +23,7 @@ namespace VestPack {
         bool& writeOnFile
     ) {
 
-        VestTypes::TreeFile* treeFile = VestFile::readTreeFile(fContent);
+        VestTypes::TreeFile* treeFile = VestObjects::readTreeFile(fContent);
         std::string fileToWrite = VestObjects::prepareTree(fContent);
         std::string sha1 = VestObjects::writeObject(fileToWrite, dir);
 

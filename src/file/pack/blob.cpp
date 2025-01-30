@@ -30,16 +30,14 @@ namespace VestPack {
         if (sha1 != treeLine->sha1()) {
 
             if (!packIndex.exists(treeLine->sha1())) {
-                // PRINT_ERROR("BLOB: NOT CURRENT SHA1: " + treeLine->sha1() + " | AND BLOB: " + sha1);
                 checkDelta = true;
                 return;
             }
 
             // Modify this to add a better sha1 handleing
-            // PRINT_SUCCESS("BLOB: SHA1 FOUND IN PACK_INDEX: " + treeLine->sha1());
+            std::string fContent = treeLine->sha1();
             std::string path = parent->getPath() + treeLine->fName;
 
-            std::string fContent = treeLine->sha1();
             if (writeOnFile) VestFile::saveToFile(path, {fContent.begin(), fContent.end()});
             reRun = true;
         }

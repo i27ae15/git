@@ -179,8 +179,8 @@ namespace VestPack {
             case VestTypes::TREE:
                 processTree(commitList, treeClass, parent, packIndex, newFile, dir, writeOnFile);
                 return;
-        default:
-            break;
+            default:
+                break;
         }
         // Compute hash
         std::string dataToComputeSha1 = objRead.getStrType() + " " + std::to_string(newFile.size()) + '\x00';
@@ -188,11 +188,7 @@ namespace VestPack {
         std::string sha1 = VestFileUtils::computeSHA1(dataToComputeSha1);
         packIndex.addSha1(sha1);
 
-        (void)VestObjects::writeObject(
-            dataToComputeSha1, dir, sha1
-        );
-
-        // PRINT_DELTA("SHA1 WRITTEN: " + sha1);
+        (void)VestObjects::writeObject(dataToComputeSha1, dir, sha1);
 
         // Check if the sha1 is the same as the one we have on queue
         // The tree must be reset.

@@ -71,8 +71,6 @@ namespace Vest {
             return EXIT_FAILURE;
         }
 
-        // PRINT_WARNING("TO READ: " + std::to_string(compressedData.size()) + " BYTES FROM FILE");
-
         VestTypes::DecompressedData data {VestFile::decompressData(compressedData)}; if (data.isEmpty()) return EXIT_FAILURE;
         unsigned char* bufferData = data.data.data() + 5;  // Start 5 bytes into the buffer this to avoid blob
 
@@ -181,7 +179,7 @@ namespace Vest {
         // Error on git-sample-2
 
         // bUrl = "https://github.com/codecrafters-io/git-sample-3";
-        PRINT_HIGHLIGHT("USING : " + bUrl);
+        PRINT_HIGHLIGHT("FETCHING TO : " + bUrl);
 
         if (dir[dir.size() - 1] != '/') dir += '/';
         if (VestObjects::initializeVest(dir) == EXIT_FAILURE) return EXIT_FAILURE;

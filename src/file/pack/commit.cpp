@@ -4,6 +4,7 @@
 
 #include <objects/initializers.h>
 #include <objects/structs.h>
+#include <objects/readers.h>
 
 #include <file/file.h>
 
@@ -18,7 +19,7 @@ namespace VestPack {
         std::string& fContent,
         std::string& dir
     ) {
-        VestTypes::CommitFile* commitFile = VestFile::readCommit(fContent);
+        VestTypes::CommitFile* commitFile = VestObjects::readCommit(fContent);
         commitList->addNode(commitFile);
 
         std::string sha1 = VestObjects::createCommit(fContent, dir);

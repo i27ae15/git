@@ -26,18 +26,9 @@ namespace VestFile {
         std::cout << std::endl;
     }
 
-    void saveToFile(const std::string& fPath, const std::vector<unsigned char>& content) {
+    void saveToFile(const std::string& fPath, const std::vector<uint8_t>& content) {
 
         std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
-        if (absolutePath.has_parent_path() && !std::filesystem::exists(absolutePath.parent_path())) {
-            PRINT_ERROR("PARENT DIRECTORY DOES NOT EXISTS: " + absolutePath.parent_path().string());
-        }
-
-        // if (std::filesystem::is_directory(absolutePath)) PRINT_HIGHLIGHT("PATH IS A DIRECTORY: " + absolutePath.string());
-
-        // std::string p = filePath.parent_path().string();
-        // PRINT_SUCCESS("PARENT FOLDER: " + p + " | FILE_NAME: " + filePath.filename().string());
-
         std::ofstream outFile(absolutePath, std::ios::binary);
         outFile.write(reinterpret_cast<const char*>(content.data()), content.size());
 
@@ -47,89 +38,6 @@ namespace VestFile {
         }
 
         std::vector<uint8_t> fContent = VestFile::readFile(absolutePath.string());
-    }
-
-    VestTypes::CommitFile* readCommit(std::string& fContent, bool fromPack) {
-
-        std::cout << fContent << "\x0A";
-
-        VestTypes::CommitFile* commit = new VestTypes::CommitFile();
-        std::string* tps[5] = {
-            &commit->tSha1,
-            &commit->pSha1,
-            &commit->author,
-            &commit->commiter,
-            &commit->commitMsg
-        };
-
-        uint8_t toWrite {};
-
-        for (uint16_t i {}; i < fContent.size(); i++) {
-
-            if (fContent[i] == '\x0A') continue;
-
-            if (toWrite == 1 && fContent[i] != 'p') toWrite++;
-            std::string* _using = tps[toWrite];
-
-            while (fContent[i] != '\x0A') {
-                *_using += fContent[i];
-                i++;
-            }
-
-            if (fromPack) {
-
-                switch (toWrite) {
-                    case 0:
-                        if (_using->find("tree ") != std::string::npos) {
-                            *_using = _using->substr(5);
-                        }
-                        break;
-
-                    case 1:
-                        if (_using->find("parent") != std::string::npos) {
-                            *_using = _using->substr(7);
-                        }
-
-                    default:
-                        break;
-                }
-
-            }
-
-            toWrite++;
-        }
-
-        return commit;
-    }
-
-    VestTypes::TreeFile* readTreeFile(std::string& fContent) {
-
-        VestTypes::TreeFile* tree = new VestTypes::TreeFile();
-
-        for (uint16_t i {}; i < fContent.size(); i++) {
-            std::string fType {};
-            std::string fName {};
-
-            std::string* _using = &fType;
-
-            for (uint16_t j {i}; j < fContent.size(); j++) {
-
-                char& c = fContent[j];
-
-                if (c == ' ') {_using = &fName; continue;}
-
-                *_using += c;
-                if (c == '\x00') {
-                    i += j - i;
-                    break;
-                }
-            }
-
-            tree->addLine(fType, fName, fContent.substr(i + 1, VestTypes::SHA_BYTES_SIZE));
-            i += VestTypes::SHA_BYTES_SIZE;
-        }
-
-        return tree;
     }
 
     uint8_t getFileType(std::string&& fPath) {
@@ -166,11 +74,11 @@ namespace VestFile {
         throw std::runtime_error("Cannot determine the file type");
     }
 
-    std::vector<unsigned char> readFile(std::string&& fPath) {
+    std::vector<uint8_t> readFile(std::string&& fPath) {
         return readFile(fPath);
     }
 
-    std::vector<unsigned char> readFile(std::string& fPath) {
+    std::vector<uint8_t> readFile(std::string& fPath) {
         std::filesystem::path absolutePath = std::filesystem::absolute(fPath);
         std::ifstream file(absolutePath, std::ios::binary);
 
@@ -189,16 +97,16 @@ namespace VestFile {
         return fileContent;
     }
 
-    std::vector<unsigned char> compressData(std::string& inputData) {
-        std::vector<unsigned char> data(inputData.begin(), inputData.end());
+    std::vector<uint8_t> compressData(std::string& inputData) {
+        std::vector<uint8_t> data(inputData.begin(), inputData.end());
         return compressData(data);
     }
 
-    std::vector<unsigned char> compressData(
-        const std::vector<unsigned char>& inputData
+    std::vector<uint8_t> compressData(
+        const std::vector<uint8_t>& inputData
     ) {
         uLongf compressedSize = compressBound(inputData.size());
-        std::vector<unsigned char> compressedData(compressedSize);
+        std::vector<uint8_t> compressedData(compressedSize);
 
         uint8_t result = compress(
             compressedData.data(),
