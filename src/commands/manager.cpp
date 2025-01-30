@@ -180,7 +180,7 @@ namespace Vest {
 
         // Error on git-sample-2
 
-        bUrl = "https://github.com/codecrafters-io/git-sample-3";
+        // bUrl = "https://github.com/codecrafters-io/git-sample-3";
         PRINT_HIGHLIGHT("USING : " + bUrl);
 
         if (dir[dir.size() - 1] != '/') dir += '/';

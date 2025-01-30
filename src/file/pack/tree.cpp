@@ -58,7 +58,7 @@ namespace VestPack {
         }
 
         (void)parent->incrementIndex();
-        if (parent->isCompleted()) VestObjects::Tree::calculateAndSetIndex(treeClass, parent);
+        if (parent->isCompleted()) (void)VestObjects::Tree::calculateAndSetIndex(treeClass, parent);
         if (reRun) {
             (void)processTree(commitList, treeClass, treeClass->getIndex(), packIndex, fContent, dir, writeOnFile);
             return;
