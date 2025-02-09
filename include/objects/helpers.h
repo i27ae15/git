@@ -11,7 +11,10 @@ namespace VestObjects {
     std::string writeObject(std::string&& fContent, std::string dirRoot = "", std::string sha1 = "");
     std::string writeObject(std::string& fContent, std::string dirRoot = "", std::string sha1 = "");
 
+    std::string prepareBlob(std::string& fContent);
+    std::string prepareTree(std::string& fContent);
     std::string prepareCommit(std::string& fContent);
+
     std::string prepareBlob(std::vector<uint8_t>& fileContent);
 
 }

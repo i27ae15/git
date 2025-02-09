@@ -96,6 +96,8 @@ namespace VestObjects {
         void setIndex(TreeNode* node);
         void setRoot(VestTypes::TreeFile* treeFile, std::string folderName);
 
+        static void calculateAndSetIndex(Tree* treeCls, TreeNode* node);
+
         private:
 
         TreeNode* index;

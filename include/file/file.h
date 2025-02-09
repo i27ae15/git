@@ -7,7 +7,7 @@
 #include <filesystem>
 
 #include <file/types.h>
-#include <file/pack.h>
+#include <file//pack/pack.h>
 
 namespace VestFile {
 
@@ -29,9 +29,6 @@ namespace VestFile {
     VestTypes::DecompressedData decompressData(
         std::vector<uint8_t>& compressedData
     );
-
-    VestTypes::CommitFile* readCommit(std::string& fContent, bool fromPack = true);
-    VestTypes::TreeFile* readTreeFile(std::string& fContent);
 }
 
 #endif // VEST_FILE_H

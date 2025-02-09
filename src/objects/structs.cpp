@@ -139,14 +139,7 @@ namespace VestObjects {
             index++;
         }
 
-        if (index == treeFile->tLines.size()) {
-            if (parent != nullptr) {
-                PRINT_WARNING("CURRENT TREE NODE COMPLETED: " + parent->getPreviousLine()->sha1());
-            } else {
-                PRINT_WARNING("ROOT COMPLETED");
-            }
-            completed = true;
-        }
+        if (index == treeFile->tLines.size()) completed = true;
     };
 
     bool TreeNode::isCompleted() {return completed;}
@@ -208,6 +201,14 @@ namespace VestObjects {
             folderName = folderName.substr(0, folderName.size() - 1);
         }
         setRoot(new TreeNode(treeFile, folderName));
+    }
+
+    void Tree::calculateAndSetIndex(Tree* treeCls, TreeNode* node) {
+        if (node == nullptr || !node->isCompleted()) {
+            treeCls->setIndex(node);
+            return;
+        }
+        calculateAndSetIndex(treeCls, node->parent);
     }
 
 
